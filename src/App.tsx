@@ -9,16 +9,17 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { SignupForm } from '@/components/auth/SignupForm';
 import { Dashboard } from '@/components/Dashboard';
+import { HomePage } from '@/components/HomePage';
 import { QuizSelection, QuizSelection as QuizSelectionType } from '@/components/quiz/QuizSelection';
 import { Loader2 } from 'lucide-react';
 
 const queryClient = new QueryClient();
 
-type AppState = 'login' | 'signup' | 'dashboard' | 'quiz-selection' | 'quiz' | 'profile';
+type AppState = 'home' | 'login' | 'signup' | 'dashboard' | 'quiz-selection' | 'quiz' | 'profile';
 
 const AppContent = () => {
   const { user, isLoading } = useAuth();
-  const [appState, setAppState] = useState<AppState>('login');
+  const [appState, setAppState] = useState<AppState>('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   if (isLoading) {
@@ -27,20 +28,6 @@ const AppContent = () => {
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <p className="text-muted-foreground">Loading Project X...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="w-full max-w-md">
-          {appState === 'login' ? (
-            <LoginForm onSwitchToSignup={() => setAppState('signup')} />
-          ) : (
-            <SignupForm onSwitchToLogin={() => setAppState('login')} />
-          )}
         </div>
       </div>
     );
@@ -59,14 +46,57 @@ const AppContent = () => {
 
   const renderCurrentView = () => {
     switch (appState) {
+      case 'home':
+        return (
+          <HomePage
+            onLogin={() => setAppState('login')}
+            onSignup={() => setAppState('signup')}
+            onDashboard={() => setAppState('dashboard')}
+            isAuthenticated={!!user}
+          />
+        );
+      case 'login':
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background px-4">
+            <div className="w-full max-w-md">
+              <LoginForm 
+                onSwitchToSignup={() => setAppState('signup')} 
+                onSuccess={() => setAppState('dashboard')}
+                onBack={() => setAppState('home')}
+              />
+            </div>
+          </div>
+        );
+      case 'signup':
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-background px-4">
+            <div className="w-full max-w-md">
+              <SignupForm 
+                onSwitchToLogin={() => setAppState('login')} 
+                onSuccess={() => setAppState('dashboard')}
+                onBack={() => setAppState('home')}
+              />
+            </div>
+          </div>
+        );
       case 'dashboard':
+        // Redirect to home if not authenticated
+        if (!user) {
+          setAppState('home');
+          return null;
+        }
         return (
           <Dashboard 
             onStartQuiz={handleStartQuiz}
             onViewProfile={() => setAppState('profile')}
+            onHome={() => setAppState('home')}
           />
         );
       case 'quiz-selection':
+        if (!user) {
+          setAppState('home');
+          return null;
+        }
         return (
           <QuizSelection
             categoryId={selectedCategory}
@@ -75,40 +105,66 @@ const AppContent = () => {
           />
         );
       case 'profile':
+        if (!user) {
+          setAppState('home');
+          return null;
+        }
         return (
           <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-4">Profile Page</h2>
               <p className="text-muted-foreground mb-4">Profile management coming soon!</p>
-              <button 
-                onClick={() => setAppState('dashboard')}
-                className="text-primary hover:underline"
-              >
-                Back to Dashboard
-              </button>
+              <div className="space-x-4">
+                <button 
+                  onClick={() => setAppState('dashboard')}
+                  className="text-primary hover:underline"
+                >
+                  Back to Dashboard
+                </button>
+                <button 
+                  onClick={() => setAppState('home')}
+                  className="text-primary hover:underline"
+                >
+                  Go to Home
+                </button>
+              </div>
             </div>
           </div>
         );
       case 'quiz':
+        if (!user) {
+          setAppState('home');
+          return null;
+        }
         return (
           <div className="min-h-screen flex items-center justify-center bg-background">
             <div className="text-center">
               <h2 className="text-2xl font-bold mb-4">Quiz Interface</h2>
               <p className="text-muted-foreground mb-4">Quiz component coming soon!</p>
-              <button 
-                onClick={() => setAppState('dashboard')}
-                className="text-primary hover:underline"
-              >
-                Back to Dashboard
-              </button>
+              <div className="space-x-4">
+                <button 
+                  onClick={() => setAppState('dashboard')}
+                  className="text-primary hover:underline"
+                >
+                  Back to Dashboard
+                </button>
+                <button 
+                  onClick={() => setAppState('home')}
+                  className="text-primary hover:underline"
+                >
+                  Go to Home
+                </button>
+              </div>
             </div>
           </div>
         );
       default:
         return (
-          <Dashboard 
-            onStartQuiz={handleStartQuiz}
-            onViewProfile={() => setAppState('profile')}
+          <HomePage
+            onLogin={() => setAppState('login')}
+            onSignup={() => setAppState('signup')}
+            onDashboard={() => setAppState('dashboard')}
+            isAuthenticated={!!user}
           />
         );
     }
