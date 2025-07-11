@@ -37,8 +37,8 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
 
   const handleSelectionChange = (
     subject: QuizSubject, 
-    block?: QuizBlock, 
-    checked: boolean
+    checked: boolean,
+    block?: QuizBlock
   ) => {
     const selectionId = block ? `${subject.id}-${block.id}` : subject.id;
     
@@ -105,7 +105,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                         <Checkbox
                           checked={isSelected(subject)}
                           onCheckedChange={(checked) => 
-                            handleSelectionChange(subject, undefined, checked as boolean)
+                            handleSelectionChange(subject, checked as boolean)
                           }
                           disabled={subject.blocks && subject.blocks.length > 0}
                         />
@@ -130,7 +130,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                             <Checkbox
                               checked={isSelected(subject, block)}
                               onCheckedChange={(checked) => 
-                                handleSelectionChange(subject, block, checked as boolean)
+                                handleSelectionChange(subject, checked as boolean, block)
                               }
                             />
                             <div className="flex-1">
