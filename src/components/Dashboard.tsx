@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useToast } from '@/hooks/use-toast';
 import { 
   BookOpen, 
   Trophy, 
@@ -27,6 +28,7 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile, onHome }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { toast } = useToast();
 
   const getSubscriptionBadge = () => {
     if (!user) return null;
@@ -39,6 +41,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
   };
 
   const canAccessQuiz = user?.subscriptionStatus === 'active';
+
+  const handleSubscribe = () => {
+    // For now, we'll show a toast message since we don't have Stripe integration yet
+    toast({
+      title: "Subscription Coming Soon!",
+      description: "We're working on integrating subscription payments. This feature will be available soon.",
+    });
+    
+    // In a real implementation, this would redirect to a payment page or open a payment modal
+    // Example: window.open('https://your-payment-provider.com/checkout', '_blank');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -89,7 +102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
             <p className="text-sm text-muted-foreground mt-1">
               You need an active subscription to access quizzes. Subscribe now to continue learning!
             </p>
-            <Button className="mt-3" size="sm">
+            <Button className="mt-3" size="sm" onClick={handleSubscribe}>
               <CreditCard className="h-4 w-4 mr-2" />
               Subscribe Now
             </Button>
