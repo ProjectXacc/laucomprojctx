@@ -13,16 +13,18 @@ import {
   Moon, 
   Sun, 
   CreditCard,
-  AlertTriangle
+  AlertTriangle,
+  Home
 } from 'lucide-react';
 import { quizCategories } from '@/data/quizData';
 
 interface DashboardProps {
   onStartQuiz: (categoryId: string) => void;
   onViewProfile: () => void;
+  onHome: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile, onHome }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
@@ -53,6 +55,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="sm" onClick={toggleTheme}>
               {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onHome}>
+              <Home className="h-4 w-4 mr-2" />
+              Home
             </Button>
             <Button variant="ghost" size="sm" onClick={onViewProfile}>
               <User className="h-4 w-4 mr-2" />

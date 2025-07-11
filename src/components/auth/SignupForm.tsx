@@ -10,9 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
+  onSuccess: () => void;
+  onBack: () => void;
 }
 
-export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
+export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSuccess, onBack }) => {
   const [name, setName] = useState('');
   const [matricNumber, setMatricNumber] = useState('');
   const [password, setPassword] = useState('');
@@ -47,6 +49,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
         title: 'Account Created',
         description: 'Your account has been created successfully!',
       });
+      onSuccess();
     } else {
       toast({
         title: 'Signup Failed',
@@ -148,12 +151,19 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin }) => {
           </Button>
         </form>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 text-center space-y-2">
           <button
             onClick={onSwitchToLogin}
             className="text-sm text-primary hover:underline"
           >
             Already have an account? Sign in
+          </button>
+          <br />
+          <button
+            onClick={onBack}
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            Back to Home
           </button>
         </div>
       </CardContent>

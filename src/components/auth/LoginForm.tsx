@@ -10,9 +10,11 @@ import { useToast } from '@/hooks/use-toast';
 
 interface LoginFormProps {
   onSwitchToSignup: () => void;
+  onSuccess: () => void;
+  onBack: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSuccess, onBack }) => {
   const [matricNumber, setMatricNumber] = useState('');
   const [password, setPassword] = useState('');
   const { login, isLoading } = useAuth();
@@ -31,7 +33,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
     }
 
     const success = await login(matricNumber, password);
-    if (!success) {
+    if (success) {
+      onSuccess();
+    } else {
       toast({
         title: 'Login Failed',
         description: 'Invalid matriculation number or password.',
@@ -98,12 +102,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup }) => {
           </Button>
         </form>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 text-center space-y-2">
           <button
             onClick={onSwitchToSignup}
             className="text-sm text-primary hover:underline"
           >
             Don't have an account? Sign up
+          </button>
+          <br />
+          <button
+            onClick={onBack}
+            className="text-sm text-muted-foreground hover:underline"
+          >
+            Back to Home
           </button>
         </div>
       </CardContent>
