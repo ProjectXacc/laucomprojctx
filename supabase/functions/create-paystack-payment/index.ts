@@ -19,23 +19,75 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Get the user from the request
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
-
-    if (!user?.email) {
-      throw new Error("User not authenticated");
+    // Get the Authorization header
+    const authHeader = req.headers.get("Authorization");
+    console.log("Auth header present:", !!authHeader);
+    
+    if (!authHeader) {
+      console.error("No authorization header found");
+      return new Response(
+        JSON.stringify({ error: "Authorization header missing" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
     }
 
+    const token = authHeader.replace("Bearer ", "");
+    console.log("Token extracted, length:", token.length);
+
+    // Get the user from the token
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    console.log("User lookup result:", { user: !!user, error: userError });
+    
+    if (userError) {
+      console.error("User authentication error:", userError);
+      return new Response(
+        JSON.stringify({ error: `Authentication failed: ${userError.message}` }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
+    }
+
+    if (!user?.email) {
+      console.error("No user or email found");
+      return new Response(
+        JSON.stringify({ error: "User not authenticated or email missing" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        }
+      );
+    }
+
+    console.log("User authenticated successfully:", user.email);
+
     const { amount = 100000, plan_name = "Monthly Subscription" } = await req.json();
+
+    console.log("Payment request:", { amount, plan_name, user_email: user.email });
+
+    // Check if PAYSTACK_SECRET_KEY is available
+    const paystackSecretKey = Deno.env.get("PAYSTACK_SECRET_KEY");
+    if (!paystackSecretKey) {
+      console.error("PAYSTACK_SECRET_KEY not configured");
+      return new Response(
+        JSON.stringify({ error: "Payment service not configured" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        }
+      );
+    }
 
     // Initialize Paystack payment
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${Deno.env.get("PAYSTACK_SECRET_KEY")}`,
+        "Authorization": `Bearer ${paystackSecretKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -52,12 +104,20 @@ serve(async (req) => {
     });
 
     const paystackData = await paystackResponse.json();
+    console.log("Paystack response:", { status: paystackData.status, message: paystackData.message });
 
     if (!paystackData.status) {
-      throw new Error(paystackData.message || "Failed to initialize payment");
+      console.error("Paystack initialization failed:", paystackData.message);
+      return new Response(
+        JSON.stringify({ error: paystackData.message || "Failed to initialize payment" }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        }
+      );
     }
 
-    console.log("Payment initialized for user:", user.email);
+    console.log("Payment initialized successfully for user:", user.email);
 
     return new Response(
       JSON.stringify({
@@ -73,7 +133,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error creating Paystack payment:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || "Internal server error" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
