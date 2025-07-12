@@ -22,6 +22,15 @@ const AppContent = () => {
   const [appState, setAppState] = useState<AppState>('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reference = urlParams.get('reference');
+    
+    if (reference && window.location.pathname === '/payment-success') {
+      setAppState('payment-success');
+    }
+  }, []);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -43,16 +52,6 @@ const AppContent = () => {
     // TODO: Implement quiz component
     setAppState('quiz');
   };
-
-  // Add useEffect to handle payment success redirect
-  React.useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const reference = urlParams.get('reference');
-    
-    if (reference && window.location.pathname === '/payment-success') {
-      setAppState('payment-success');
-    }
-  }, []);
 
   const renderCurrentView = () => {
     switch (appState) {
