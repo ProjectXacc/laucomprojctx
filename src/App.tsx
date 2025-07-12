@@ -15,7 +15,7 @@ import { PaymentSuccess } from '@/components/PaymentSuccess';
 
 const queryClient = new QueryClient();
 
-type AppState = 'home' | 'login' | 'signup' | 'dashboard' | 'quiz-selection' | 'quiz' | 'profile';
+type AppState = 'home' | 'login' | 'signup' | 'dashboard' | 'quiz-selection' | 'quiz' | 'profile' | 'payment-success';
 
 const AppContent = () => {
   const { user, isLoading } = useAuth();
