@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,7 +50,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
         description: "Redirecting to Paystack checkout...",
       });
 
-      const paymentData = await paymentService.initializePayment(4999, "Monthly Subscription");
+      const paymentData = await paymentService.initializePayment(100000, "Monthly Subscription");
       
       // Redirect to Paystack payment page
       paymentService.redirectToPayment(paymentData.authorization_url);
@@ -110,11 +111,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
               <h3 className="font-semibold text-destructive">Subscription Required</h3>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              You need an active subscription to access quizzes. Subscribe now to continue learning!
+              You need an active subscription to access quizzes. Subscribe now for ₦1,000/month to continue learning!
             </p>
             <Button className="mt-3" size="sm" onClick={handleSubscribe}>
               <CreditCard className="h-4 w-4 mr-2" />
-              Subscribe Now
+              Subscribe Now - ₦1,000/month
             </Button>
           </div>
         )}

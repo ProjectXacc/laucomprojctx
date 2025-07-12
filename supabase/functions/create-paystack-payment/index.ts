@@ -29,7 +29,7 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    const { amount = 4999, plan_name = "Monthly Subscription" } = await req.json();
+    const { amount = 100000, plan_name = "Monthly Subscription" } = await req.json();
 
     // Initialize Paystack payment
     const paystackResponse = await fetch("https://api.paystack.co/transaction/initialize", {

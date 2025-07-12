@@ -20,7 +20,7 @@ export interface PaymentVerificationResponse {
 }
 
 export const paymentService = {
-  async initializePayment(amount: number = 4999, planName: string = "Monthly Subscription"): Promise<PaymentInitResponse> {
+  async initializePayment(amount: number = 100000, planName: string = "Monthly Subscription"): Promise<PaymentInitResponse> {
     try {
       const { data, error } = await supabase.functions.invoke('create-paystack-payment', {
         body: { 
