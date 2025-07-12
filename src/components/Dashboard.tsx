@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,7 @@ import {
   Home
 } from 'lucide-react';
 import { quizCategories } from '@/data/quizData';
+import { paymentService } from '@/services/paymentService';
 
 interface DashboardProps {
   onStartQuiz: (categoryId: string) => void;
@@ -42,15 +42,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
 
   const canAccessQuiz = user?.subscriptionStatus === 'active';
 
-  const handleSubscribe = () => {
-    // For now, we'll show a toast message since we don't have Stripe integration yet
-    toast({
-      title: "Subscription Coming Soon!",
-      description: "We're working on integrating subscription payments. This feature will be available soon.",
-    });
-    
-    // In a real implementation, this would redirect to a payment page or open a payment modal
-    // Example: window.open('https://your-payment-provider.com/checkout', '_blank');
+  const handleSubscribe = async () => {
+    try {
+      toast({
+        title: "Initializing Payment",
+        description: "Redirecting to Paystack checkout...",
+      });
+
+      const paymentData = await paymentService.initializePayment(4999, "Monthly Subscription");
+      
+      // Redirect to Paystack payment page
+      paymentService.redirectToPayment(paymentData.authorization_url);
+    } catch (error) {
+      console.error('Payment initialization error:', error);
+      toast({
+        title: "Payment Error",
+        description: "Failed to initialize payment. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

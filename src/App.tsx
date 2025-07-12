@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,6 +11,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { HomePage } from '@/components/HomePage';
 import { QuizSelection, QuizSelection as QuizSelectionType } from '@/components/quiz/QuizSelection';
 import { Loader2 } from 'lucide-react';
+import { PaymentSuccess } from '@/components/PaymentSuccess';
 
 const queryClient = new QueryClient();
 
@@ -43,6 +43,16 @@ const AppContent = () => {
     // TODO: Implement quiz component
     setAppState('quiz');
   };
+
+  // Add useEffect to handle payment success redirect
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reference = urlParams.get('reference');
+    
+    if (reference && window.location.pathname === '/payment-success') {
+      setAppState('payment-success');
+    }
+  }, []);
 
   const renderCurrentView = () => {
     switch (appState) {
@@ -157,6 +167,16 @@ const AppContent = () => {
               </div>
             </div>
           </div>
+        );
+      case 'payment-success':
+        return (
+          <PaymentSuccess
+            onBackToDashboard={() => {
+              // Clear URL parameters
+              window.history.replaceState({}, document.title, window.location.pathname);
+              setAppState('dashboard');
+            }}
+          />
         );
       default:
         return (
