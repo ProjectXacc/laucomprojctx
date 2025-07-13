@@ -12,6 +12,10 @@ import { Dashboard } from '@/components/Dashboard';
 import { HomePage } from '@/components/HomePage';
 import { ProfilePage } from '@/components/ProfilePage';
 import { QuizSelection, QuizSelection as QuizSelectionType } from '@/components/quiz/QuizSelection';
+import { Quiz } from '@/components/quiz/Quiz';
+import { QuizHistory } from '@/components/QuizHistory';
+import { AccountSettings } from '@/components/AccountSettings';
+import { BillingHistory } from '@/components/BillingHistory';
 import { AdminLogin } from '@/components/admin/AdminLogin';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { AdminPasswordEdit } from '@/components/admin/AdminPasswordEdit';
@@ -20,12 +24,13 @@ import { PaymentSuccess } from '@/components/PaymentSuccess';
 
 const queryClient = new QueryClient();
 
-type AppState = 'home' | 'login' | 'signup' | 'dashboard' | 'quiz-selection' | 'quiz' | 'profile' | 'payment-success' | 'admin-login' | 'admin-dashboard' | 'admin-password-edit';
+type AppState = 'home' | 'login' | 'signup' | 'dashboard' | 'quiz-selection' | 'quiz' | 'profile' | 'quiz-history' | 'account-settings' | 'billing-history' | 'payment-success' | 'admin-login' | 'admin-dashboard' | 'admin-password-edit';
 
 const AppContent = () => {
   const { user, isLoading } = useAuth();
   const [appState, setAppState] = useState<AppState>('home');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [quizSelections, setQuizSelections] = useState<QuizSelectionType[]>([]);
 
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -57,7 +62,7 @@ const AppContent = () => {
 
   const handleStartActualQuiz = (selections: QuizSelectionType[]) => {
     console.log('Starting quiz with selections:', selections);
-    // TODO: Implement quiz component
+    setQuizSelections(selections);
     setAppState('quiz');
   };
 
@@ -129,6 +134,9 @@ const AppContent = () => {
         return (
           <ProfilePage
             onBack={() => setAppState('dashboard')}
+            onViewQuizHistory={() => setAppState('quiz-history')}
+            onViewAccountSettings={() => setAppState('account-settings')}
+            onViewBillingHistory={() => setAppState('billing-history')}
           />
         );
       case 'quiz':
@@ -137,29 +145,41 @@ const AppContent = () => {
           return null;
         }
         return (
-          <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-yellow-50 to-orange-100">
-            <div className="text-center max-w-md mx-auto px-4">
-              <div className="w-24 h-24 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-4xl">🧠</span>
-              </div>
-              <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">Quiz Interface</h2>
-              <p className="text-gray-600 mb-6">Advanced quiz component coming soon with 100+ questions per block!</p>
-              <div className="space-y-3">
-                <button 
-                  onClick={() => setAppState('dashboard')}
-                  className="w-full px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-600 text-white rounded-lg hover:from-yellow-600 hover:to-orange-700 transition-all duration-200 shadow-lg"
-                >
-                  Back to Dashboard
-                </button>
-                <button 
-                  onClick={() => setAppState('home')}
-                  className="w-full px-6 py-3 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 border border-gray-200"
-                >
-                  Go to Home
-                </button>
-              </div>
-            </div>
-          </div>
+          <Quiz
+            selections={quizSelections}
+            onBack={() => setAppState('quiz-selection')}
+            onComplete={() => setAppState('dashboard')}
+          />
+        );
+      case 'quiz-history':
+        if (!user) {
+          setAppState('home');
+          return null;
+        }
+        return (
+          <QuizHistory
+            onBack={() => setAppState('profile')}
+          />
+        );
+      case 'account-settings':
+        if (!user) {
+          setAppState('home');
+          return null;
+        }
+        return (
+          <AccountSettings
+            onBack={() => setAppState('profile')}
+          />
+        );
+      case 'billing-history':
+        if (!user) {
+          setAppState('home');
+          return null;
+        }
+        return (
+          <BillingHistory
+            onBack={() => setAppState('profile')}
+          />
         );
       case 'admin-login':
         return (

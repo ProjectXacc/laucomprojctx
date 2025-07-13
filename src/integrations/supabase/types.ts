@@ -86,6 +86,45 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_results: {
+        Row: {
+          category_id: string
+          completed_at: string
+          correct_answers: number
+          created_at: string
+          id: string
+          score_percentage: number
+          subject_ids: string[]
+          time_taken_seconds: number
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          completed_at?: string
+          correct_answers: number
+          created_at?: string
+          id?: string
+          score_percentage: number
+          subject_ids: string[]
+          time_taken_seconds: number
+          total_questions: number
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          completed_at?: string
+          correct_answers?: number
+          created_at?: string
+          id?: string
+          score_percentage?: number
+          subject_ids?: string[]
+          time_taken_seconds?: number
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           amount: number | null
@@ -117,6 +156,36 @@ export type Database = {
           subscription_end?: string | null
           subscription_start?: string | null
           subscription_status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          preferences: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          preferences?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          preferences?: Json | null
           updated_at?: string
           user_id?: string
         }

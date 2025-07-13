@@ -25,9 +25,17 @@ import {
 
 interface ProfilePageProps {
   onBack: () => void;
+  onViewQuizHistory: () => void;
+  onViewAccountSettings: () => void;
+  onViewBillingHistory: () => void;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
+export const ProfilePage: React.FC<ProfilePageProps> = ({ 
+  onBack, 
+  onViewQuizHistory, 
+  onViewAccountSettings, 
+  onViewBillingHistory 
+}) => {
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -243,7 +251,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
                     )}
                   </div>
                   {(!subscription || subscription.subscription_status !== 'active') && (
-                    <Button className="bg-gradient-to-r from-green-500 to-emerald-600">
+                    <Button 
+                      className="bg-gradient-to-r from-green-500 to-emerald-600"
+                      onClick={async () => {
+                        try {
+                          const { paymentService } = await import('@/services/paymentService');
+                          const paymentData = await paymentService.initializePayment(100000, "Monthly Subscription");
+                          paymentService.redirectToPayment(paymentData.authorization_url);
+                        } catch (error) {
+                          console.error('Payment error:', error);
+                        }
+                      }}
+                    >
                       Upgrade Plan
                     </Button>
                   )}
@@ -292,15 +311,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ onBack }) => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start" onClick={onViewQuizHistory}>
                     <BookOpen className="h-4 w-4 mr-2" />
                     View Quiz History
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start" onClick={onViewAccountSettings}>
                     <Settings className="h-4 w-4 mr-2" />
                     Account Settings
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button variant="outline" className="w-full justify-start" onClick={onViewBillingHistory}>
                     <CreditCard className="h-4 w-4 mr-2" />
                     Billing History
                   </Button>
