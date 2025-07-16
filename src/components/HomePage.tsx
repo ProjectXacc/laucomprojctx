@@ -74,9 +74,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
           <div className="mb-8">
-            <div className="w-32 h-32 bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl animate-pulse">
-              <span className="text-6xl">🧠✨</span>
-            </div>
           </div>
           <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
             Master Medical Knowledge with
