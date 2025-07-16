@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { QuizSelection } from './QuizSelection';
+import { PaymentPrompt } from '@/components/PaymentPrompt';
 import { 
   Clock, 
   CheckCircle, 
@@ -43,7 +44,7 @@ interface Answer {
 }
 
 export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) => {
-  const { user } = useAuth();
+  const { user, hasActiveSubscription } = useAuth();
   const { toast } = useToast();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -53,10 +54,17 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
   const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes
   const [isLoading, setIsLoading] = useState(true);
   const [quizCompleted, setQuizCompleted] = useState(false);
+  const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
 
   useEffect(() => {
+    // Check subscription before fetching questions
+    if (!hasActiveSubscription) {
+      setShowPaymentPrompt(true);
+      setIsLoading(false);
+      return;
+    }
     fetchQuestions();
-  }, []);
+  }, [hasActiveSubscription]);
 
   useEffect(() => {
     if (timeLeft > 0 && !quizCompleted) {
@@ -76,7 +84,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
         let query = supabase
           .from('quiz_questions')
           .select('*')
-          .eq('category_id', selection.subjectId);
+          .eq('subject_id', selection.subjectId);
           
         if (selection.blockId) {
           query = query.eq('block_id', selection.blockId);
@@ -84,10 +92,22 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
         
         const { data, error } = await query.limit(selection.questionCount);
         
-        if (error) throw error;
+        if (error) {
+          console.error('Query error:', error);
+          throw error;
+        }
         if (data) {
           allQuestions.push(...data);
         }
+      }
+      
+      if (allQuestions.length === 0) {
+        toast({
+          title: "No Questions Found",
+          description: "No questions available for the selected topics.",
+          variant: "destructive",
+        });
+        return;
       }
       
       // Shuffle questions
@@ -97,7 +117,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
       console.error('Error fetching questions:', error);
       toast({
         title: "Error",
-        description: "Failed to load quiz questions. Please try again.",
+        description: "Failed to load quiz questions. Please check your connection and try again.",
         variant: "destructive",
       });
     } finally {
@@ -169,6 +189,18 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
+
+  if (showPaymentPrompt) {
+    return (
+      <PaymentPrompt 
+        onBack={onBack}
+        onPaymentSuccess={() => {
+          setShowPaymentPrompt(false);
+          fetchQuestions();
+        }}
+      />
+    );
+  }
 
   if (isLoading) {
     return (

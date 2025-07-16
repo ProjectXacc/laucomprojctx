@@ -1,5 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
 interface User {
   id: string;
@@ -13,11 +14,18 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
+  loading: boolean;
+  isLoading: boolean;
+  hasActiveSubscription: boolean;
   login: (matricNumber: string, password: string) => Promise<boolean>;
   logout: () => void;
   signup: (name: string, matricNumber: string, password: string) => Promise<boolean>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => void;
-  isLoading: boolean;
+  checkSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,87 +40,177 @@ export const useAuth = () => {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
   useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          await createUserFromSupabase(session.user);
+          await checkSubscription();
+        } else {
+          setUser(null);
+          setHasActiveSubscription(false);
+        }
+      }
+    );
+
     // Check for existing session
-    const savedUser = localStorage.getItem('projectx-user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        createUserFromSupabase(session.user);
+        checkSubscription();
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (matricNumber: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
+  const createUserFromSupabase = async (supabaseUser: SupabaseUser) => {
     try {
-      // Simulate API call - replace with actual authentication
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
-        name: 'Medical Student',
-        matricNumber,
-        email: `${matricNumber}@projectx.app`,
-        subscriptionStatus: 'active',
-        subscriptionExpiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      // Try to get user profile
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', supabaseUser.id)
+        .maybeSingle();
+
+      const user: User = {
+        id: supabaseUser.id,
+        name: profile?.display_name || supabaseUser.email?.split('@')[0] || 'User',
+        matricNumber: supabaseUser.email || '',
+        email: supabaseUser.email || '',
+        subscriptionStatus: 'none'
       };
-      
-      setUser(mockUser);
-      localStorage.setItem('projectx-user', JSON.stringify(mockUser));
-      setIsLoading(false);
-      return true;
+
+      setUser(user);
     } catch (error) {
-      setIsLoading(false);
-      return false;
+      console.error('Error creating user:', error);
     }
+  };
+
+  const checkSubscription = async () => {
+    if (!session?.user) return;
+    
+    try {
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('subscription_status', 'active')
+        .maybeSingle();
+
+      if (subscription && subscription.subscription_end) {
+        const endDate = new Date(subscription.subscription_end);
+        const now = new Date();
+        const isActive = endDate > now;
+        setHasActiveSubscription(isActive);
+        
+        if (user) {
+          setUser({
+            ...user,
+            subscriptionStatus: isActive ? 'active' : 'expired',
+            subscriptionExpiry: subscription.subscription_end
+          });
+        }
+      } else {
+        setHasActiveSubscription(false);
+        if (user) {
+          setUser({
+            ...user,
+            subscriptionStatus: 'none'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      setHasActiveSubscription(false);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    return { error };
+  };
+
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`
+      }
+    });
+    return { error };
+  };
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  // Legacy methods for backward compatibility
+  const login = async (matricNumber: string, password: string): Promise<boolean> => {
+    const { error } = await signIn(matricNumber, password);
+    return !error;
   };
 
   const signup = async (name: string, matricNumber: string, password: string): Promise<boolean> => {
-    setIsLoading(true);
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newUser: User = {
-        id: Date.now().toString(),
-        name,
-        matricNumber,
-        email: `${matricNumber}@projectx.app`,
-        subscriptionStatus: 'none'
-      };
-      
-      setUser(newUser);
-      localStorage.setItem('projectx-user', JSON.stringify(newUser));
-      setIsLoading(false);
-      return true;
-    } catch (error) {
-      setIsLoading(false);
-      return false;
+    const { error } = await signUp(matricNumber, password);
+    if (!error) {
+      // Create user profile
+      setTimeout(async () => {
+        await supabase.from('user_profiles').insert({
+          user_id: session?.user?.id,
+          display_name: name
+        });
+      }, 1000);
     }
+    return !error;
   };
 
   const logout = () => {
-    setUser(null);
-    localStorage.removeItem('projectx-user');
+    signOut();
   };
 
   const updateProfile = (updates: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...updates };
       setUser(updatedUser);
-      localStorage.setItem('projectx-user', JSON.stringify(updatedUser));
+      
+      // Update in Supabase
+      if (session?.user) {
+        supabase.from('user_profiles').upsert({
+          user_id: session.user.id,
+          display_name: updates.name || user.name
+        });
+      }
     }
   };
 
   return (
     <AuthContext.Provider value={{
       user,
+      session,
+      loading,
+      isLoading: loading,
+      hasActiveSubscription,
       login,
       logout,
       signup,
+      signIn,
+      signUp,
+      signOut,
       updateProfile,
-      isLoading
+      checkSubscription
     }}>
       {children}
     </AuthContext.Provider>

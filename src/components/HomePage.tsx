@@ -25,8 +25,8 @@ export const HomePage: React.FC<HomePageProps> = ({
       <header className="bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-              <BookOpen className="h-7 w-7 text-white" />
+            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg">
+              <BookOpen className="h-7 w-7 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">

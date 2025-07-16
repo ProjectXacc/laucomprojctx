@@ -41,6 +41,28 @@ serve(async (req) => {
       throw new Error("Payment was not successful");
     }
 
+    // Update subscription status in database
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    const { error: subError } = await supabaseClient
+      .from("subscriptions")
+      .upsert({
+        user_id: transaction.metadata.user_id,
+        subscription_status: "active",
+        payment_reference: reference,
+        amount: transaction.amount / 100, // Convert from kobo to naira
+        subscription_start: new Date().toISOString(),
+        subscription_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year
+        updated_at: new Date().toISOString(),
+      });
+
+    if (subError) {
+      console.error("Subscription update error:", subError);
+    }
+
     console.log("Payment verified successfully:", reference);
 
     return new Response(

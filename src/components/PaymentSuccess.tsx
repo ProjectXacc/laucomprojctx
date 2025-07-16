@@ -3,8 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, XCircle } from 'lucide-react';
-import { paymentService } from '@/services/paymentService';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface PaymentSuccessProps {
   onBackToDashboard: () => void;
@@ -13,7 +14,8 @@ interface PaymentSuccessProps {
 export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ onBackToDashboard }) => {
   const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'failed'>('loading');
   const [transactionDetails, setTransactionDetails] = useState<any>(null);
-  const { updateProfile } = useAuth();
+  const { checkSubscription } = useAuth();
+  const { toast } = useToast();
 
   useEffect(() => {
     const verifyPayment = async () => {
@@ -27,19 +29,22 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ onBackToDashboar
           return;
         }
 
-        const response = await paymentService.verifyPayment(reference);
+        const { data, error } = await supabase.functions.invoke('verify-paystack-payment', {
+          body: { reference }
+        });
         
-        if (response.status === 'success' && response.transaction.status === 'success') {
-          setTransactionDetails(response.transaction);
+        if (error) throw error;
+        
+        if (data.status === 'success' && data.transaction.status === 'success') {
+          setTransactionDetails(data.transaction);
           setVerificationStatus('success');
           
           // Update user subscription status
-          const expiryDate = new Date();
-          expiryDate.setMonth(expiryDate.getMonth() + 1); // Add 1 month
+          await checkSubscription();
           
-          updateProfile({
-            subscriptionStatus: 'active',
-            subscriptionExpiry: expiryDate.toISOString()
+          toast({
+            title: "Payment Successful!",
+            description: "Your subscription has been activated. You now have access to all quiz questions.",
           });
         } else {
           setVerificationStatus('failed');
@@ -51,7 +56,7 @@ export const PaymentSuccess: React.FC<PaymentSuccessProps> = ({ onBackToDashboar
     };
 
     verifyPayment();
-  }, [updateProfile]);
+  }, [checkSubscription]);
 
   const renderContent = () => {
     switch (verificationStatus) {
