@@ -5,8 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2, User, Lock, UserPlus } from 'lucide-react';
+import { Loader2, User, Lock, UserPlus, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SignupFormProps {
   onSwitchToLogin: () => void;
@@ -16,19 +17,28 @@ interface SignupFormProps {
 
 export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSuccess, onBack }) => {
   const [name, setName] = useState('');
-  const [matricNumber, setMatricNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const { signup, isLoading } = useAuth();
+  const { signUp, loading } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password.length !== 6) {
+    if (!name || !email || !password) {
+      toast({
+        title: 'Missing Information',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (password.length < 6) {
       toast({
         title: 'Invalid Password',
-        description: 'Password must be exactly 6 digits.',
+        description: 'Password must be at least 6 characters long.',
         variant: 'destructive'
       });
       return;
@@ -43,17 +53,17 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSucce
       return;
     }
 
-    const success = await signup(name, matricNumber, password);
-    if (success) {
+    const { error } = await signUp(email, password, name);
+    if (!error) {
       toast({
         title: 'Account Created',
-        description: 'Your account has been created successfully!',
+        description: 'Please check your email to verify your account.',
       });
       onSuccess();
     } else {
       toast({
         title: 'Signup Failed',
-        description: 'Failed to create account. Please try again.',
+        description: error.message || 'Failed to create account. Please try again.',
         variant: 'destructive'
       });
     }
@@ -88,15 +98,15 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSucce
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="matric">Matriculation Number</Label>
+            <Label htmlFor="email">Email Address</Label>
             <div className="relative">
-              <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                id="matric"
-                type="text"
-                placeholder="Enter your matric number"
-                value={matricNumber}
-                onChange={(e) => setMatricNumber(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
                 required
               />
@@ -104,18 +114,17 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSucce
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="password">Password (6 digits)</Label>
+            <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="password"
                 type="password"
-                placeholder="Create 6-digit password"
+                placeholder="Create a password (min 6 characters)"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
-                maxLength={6}
-                pattern="[0-9]{6}"
+                minLength={6}
                 required
               />
             </div>
@@ -132,15 +141,14 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSucce
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="pl-10"
-                maxLength={6}
-                pattern="[0-9]{6}"
+                minLength={6}
                 required
               />
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Creating Account...

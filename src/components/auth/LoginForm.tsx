@@ -15,30 +15,30 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSuccess, onBack }) => {
-  const [matricNumber, setMatricNumber] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoading } = useAuth();
+  const { signIn, loading } = useAuth();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password.length !== 6) {
+    if (!email || !password) {
       toast({
-        title: 'Invalid Password',
-        description: 'Password must be exactly 6 digits.',
+        title: 'Missing Information',
+        description: 'Please enter both email and password.',
         variant: 'destructive'
       });
       return;
     }
 
-    const success = await login(matricNumber, password);
-    if (success) {
+    const { error } = await signIn(email, password);
+    if (!error) {
       onSuccess();
     } else {
       toast({
         title: 'Login Failed',
-        description: 'Invalid matriculation number or password.',
+        description: error.message || 'Invalid email or password.',
         variant: 'destructive'
       });
     }
@@ -57,15 +57,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSucces
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="matric">Matriculation Number</Label>
+            <Label htmlFor="email">Email Address</Label>
             <div className="relative">
               <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                id="matric"
-                type="text"
-                placeholder="Enter your matric number"
-                value={matricNumber}
-                onChange={(e) => setMatricNumber(e.target.value)}
+                id="email"
+                type="email"
+                placeholder="Enter your email address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="pl-10"
                 required
               />
@@ -73,25 +73,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSucces
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="password">Password (6 digits)</Label>
+            <Label htmlFor="password">Password</Label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter 6-digit password"
+                placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
-                maxLength={6}
-                pattern="[0-9]{6}"
                 required
               />
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? (
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Signing In...

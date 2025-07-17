@@ -22,7 +22,7 @@ interface AuthContextType {
   logout: () => void;
   signup: (name: string, matricNumber: string, password: string) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, displayName?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => void;
   checkSubscription: () => Promise<void>;
@@ -142,12 +142,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error };
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, displayName?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`
+        emailRedirectTo: `${window.location.origin}/`,
+        data: {
+          display_name: displayName || email.split('@')[0]
+        }
       }
     });
     return { error };
