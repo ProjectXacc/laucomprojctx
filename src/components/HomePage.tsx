@@ -76,8 +76,8 @@ export const HomePage: React.FC<HomePageProps> = ({
           <div className="mb-8">
           </div>
           <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-            Master Medical Knowledge with
-            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent block mt-2">
+            Welcome to
+            <span className="bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent block mt-2">
               Project X ✨
             </span>
           </h2>
