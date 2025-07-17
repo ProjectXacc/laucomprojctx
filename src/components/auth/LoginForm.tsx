@@ -47,7 +47,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToSignup, onSucces
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold gradient-medical bg-clip-text text-transparent">
+        <CardTitle className="text-2xl font-bold text-primary">
           Welcome to Project X
         </CardTitle>
         <CardDescription>

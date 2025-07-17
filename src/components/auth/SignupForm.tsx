@@ -62,8 +62,8 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSwitchToLogin, onSucce
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold gradient-medical bg-clip-text text-transparent">
-          Join Project X
+        <CardTitle className="text-2xl font-bold text-primary">
+          Welcome to Project X
         </CardTitle>
         <CardDescription>
           Create your account to start your medical journey
