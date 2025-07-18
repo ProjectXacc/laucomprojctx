@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,7 +69,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold gradient-medical bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold text-primary">
               Project X
             </h1>
             {getSubscriptionBadge()}
