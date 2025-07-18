@@ -47,11 +47,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         if (session?.user) {
-          await createUserFromSupabase(session.user);
-          await checkSubscription();
+          // Use setTimeout to defer async operations and prevent deadlocks
+          setTimeout(() => {
+            createUserFromSupabase(session.user);
+            checkSubscription();
+          }, 0);
         } else {
           setUser(null);
           setHasActiveSubscription(false);
