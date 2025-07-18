@@ -29,9 +29,9 @@ export const HomePage: React.FC<HomePageProps> = ({
               <BookOpen className="h-7 w-7 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                Project X
-              </h1>
+            <h1 className="text-2xl font-bold text-primary">
+              Project X
+            </h1>
               <p className="text-xs text-gray-600">Medical Excellence Platform</p>
             </div>
           </div>
