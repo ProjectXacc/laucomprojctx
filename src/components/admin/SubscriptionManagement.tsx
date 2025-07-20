@@ -119,16 +119,12 @@ export const SubscriptionManagement: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // First get all users from auth.users (through user_profiles)
+      // Get user profiles (this includes user_id and display_name)
       const { data: userProfiles, error: profileError } = await supabase
         .from('user_profiles')
         .select('user_id, display_name');
 
       if (profileError) throw profileError;
-
-      // Get all auth users to get emails
-      const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
-      if (authError) throw authError;
 
       // Get all subscriptions
       const { data: subscriptions, error: subError } = await supabase
@@ -140,9 +136,12 @@ export const SubscriptionManagement: React.FC = () => {
       // Combine the data
       const combinedData: UserSubscription[] = [];
       
-      for (const authUser of authData.users) {
-        const profile = userProfiles?.find(p => p.user_id === authUser.id);
-        const subscription = subscriptions?.find(s => s.user_id === authUser.id);
+      // Create a map of user profiles for quick lookup
+      const profileMap = new Map(userProfiles?.map(p => [p.user_id, p]) || []);
+      
+      // Process users from user_profiles (all registered users have profiles)
+      for (const profile of userProfiles || []) {
+        const subscription = subscriptions?.find(s => s.user_id === profile.user_id);
         
         // Determine subscription status
         let subscriptionStatus: 'active' | 'expired' | 'trial' | 'none' = 'none';
@@ -160,9 +159,9 @@ export const SubscriptionManagement: React.FC = () => {
         }
 
         combinedData.push({
-          user_id: authUser.id,
-          user_email: authUser.email || 'No email',
-          user_name: profile?.display_name || authUser.email?.split('@')[0] || 'Unknown',
+          user_id: profile.user_id,
+          user_email: 'Email not available', // Can't access auth.users directly
+          user_name: profile.display_name || 'Unknown User',
           subscription_status: subscriptionStatus,
           subscription_start: subscription?.subscription_start || null,
           subscription_end: subscription?.subscription_end || null,
@@ -170,8 +169,8 @@ export const SubscriptionManagement: React.FC = () => {
           is_trial: subscription?.is_trial || false,
           amount: subscription?.amount || null,
           payment_reference: subscription?.payment_reference || null,
-          created_at: subscription?.created_at || authUser.created_at,
-          updated_at: subscription?.updated_at || authUser.updated_at || authUser.created_at
+          created_at: subscription?.created_at || new Date().toISOString(),
+          updated_at: subscription?.updated_at || new Date().toISOString()
         });
       }
 
