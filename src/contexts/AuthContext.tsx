@@ -106,14 +106,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     console.log('Checking subscription for user:', session.user.id);
     try {
-      const { data: subscription } = await supabase
+      const { data: subscriptions, error } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false })
-        .maybeSingle();
+        .limit(1);
 
-      console.log('Subscription data from DB:', subscription);
+      console.log('Subscription data from DB:', subscriptions);
+      const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
 
       if (subscription) {
         const now = new Date();
