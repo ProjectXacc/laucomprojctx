@@ -28,6 +28,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => void;
   checkSubscription: () => Promise<void>;
+  refreshSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -122,22 +123,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let isOnTrial = subscription.is_trial || false;
         let trialEndsAt = '';
 
-        // Use the status from the database, but validate with dates
-        if (subscription.subscription_status === 'active') {
-          if (subscription.is_trial && subscription.trial_end) {
-            const trialEndDate = new Date(subscription.trial_end);
-            isOnTrial = true;
-            trialEndsAt = subscription.trial_end;
-            
-            if (trialEndDate > now) {
-              isActive = true;
-              subscriptionStatus = 'trial';
-              subscriptionExpiry = subscription.trial_end;
-            } else {
-              subscriptionStatus = 'expired';
-              subscriptionExpiry = subscription.trial_end;
-            }
-          } else if (subscription.subscription_end) {
+        // Use the status from the database, but validate with dates  
+        if (subscription.subscription_status === 'trial' && subscription.is_trial && subscription.trial_end) {
+          const trialEndDate = new Date(subscription.trial_end);
+          isOnTrial = true;
+          trialEndsAt = subscription.trial_end;
+          
+          if (trialEndDate > now) {
+            isActive = true;
+            subscriptionStatus = 'trial';
+            subscriptionExpiry = subscription.trial_end;
+          } else {
+            subscriptionStatus = 'expired';
+            subscriptionExpiry = subscription.trial_end;
+          }
+        } else if (subscription.subscription_status === 'active') {
+          if (subscription.subscription_end) {
             // Regular subscription
             const endDate = new Date(subscription.subscription_end);
             if (endDate > now) {
@@ -164,6 +165,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           if (subscription.trial_end) {
             trialEndsAt = subscription.trial_end;
+            isOnTrial = subscription.is_trial || false;
           }
         }
 
@@ -280,7 +282,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  return (
+  const refreshSubscription = async () => {
+    await checkSubscription();
+  };
+
+   return (
     <AuthContext.Provider value={{
       user,
       session,
@@ -294,7 +300,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signUp,
       signOut,
       updateProfile,
-      checkSubscription
+      checkSubscription,
+      refreshSubscription
     }}>
       {children}
     </AuthContext.Provider>

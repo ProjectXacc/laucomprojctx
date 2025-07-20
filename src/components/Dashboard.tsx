@@ -14,7 +14,8 @@ import {
   Sun, 
   CreditCard,
   AlertTriangle,
-  Home
+  Home,
+  RefreshCw
 } from 'lucide-react';
 import { quizCategories } from '@/data/quizData';
 import { paymentService } from '@/services/paymentService';
@@ -26,9 +27,17 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile, onHome }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshSubscription } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
+
+  const handleRefreshSubscription = async () => {
+    await refreshSubscription();
+    toast({
+      title: "Subscription Status Refreshed",
+      description: "Your subscription status has been updated.",
+    });
+  };
 
   const getSubscriptionBadge = () => {
     if (!user) return null;
@@ -156,7 +165,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Subscription</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center space-x-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleRefreshSubscription}
+                  className="h-6 w-6 p-0"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
