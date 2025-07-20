@@ -108,41 +108,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('subscriptions')
         .select('*')
         .eq('user_id', session.user.id)
-        .eq('subscription_status', 'active')
+        .order('created_at', { ascending: false })
         .maybeSingle();
 
       if (subscription) {
         const now = new Date();
         let isActive = false;
-        let subscriptionStatus: 'active' | 'expired' | 'trial' | 'none' = 'none';
+        let subscriptionStatus: 'active' | 'expired' | 'trial' | 'none' = 
+          ['active', 'expired', 'trial', 'none'].includes(subscription.subscription_status) 
+            ? subscription.subscription_status as 'active' | 'expired' | 'trial' | 'none'
+            : 'none';
         let subscriptionExpiry = '';
-        let isOnTrial = false;
+        let isOnTrial = subscription.is_trial || false;
         let trialEndsAt = '';
 
-        // Check if this is a trial subscription
-        if (subscription.is_trial && subscription.trial_end) {
-          const trialEndDate = new Date(subscription.trial_end);
-          isOnTrial = true;
-          trialEndsAt = subscription.trial_end;
-          
-          if (trialEndDate > now) {
-            isActive = true;
-            subscriptionStatus = 'trial';
-            subscriptionExpiry = subscription.trial_end;
+        // Use the status from the database, but validate with dates
+        if (subscription.subscription_status === 'active') {
+          if (subscription.is_trial && subscription.trial_end) {
+            const trialEndDate = new Date(subscription.trial_end);
+            isOnTrial = true;
+            trialEndsAt = subscription.trial_end;
+            
+            if (trialEndDate > now) {
+              isActive = true;
+              subscriptionStatus = 'trial';
+              subscriptionExpiry = subscription.trial_end;
+            } else {
+              subscriptionStatus = 'expired';
+              subscriptionExpiry = subscription.trial_end;
+            }
+          } else if (subscription.subscription_end) {
+            // Regular subscription
+            const endDate = new Date(subscription.subscription_end);
+            if (endDate > now) {
+              isActive = true;
+              subscriptionStatus = 'active';
+              subscriptionExpiry = subscription.subscription_end;
+            } else {
+              subscriptionStatus = 'expired';
+              subscriptionExpiry = subscription.subscription_end;
+            }
           } else {
-            subscriptionStatus = 'expired';
-            subscriptionExpiry = subscription.trial_end;
-          }
-        } else if (subscription.subscription_end) {
-          // Regular subscription
-          const endDate = new Date(subscription.subscription_end);
-          if (endDate > now) {
+            // Active subscription without end date
             isActive = true;
             subscriptionStatus = 'active';
+          }
+        } else {
+          // Use the database status as-is for non-active statuses
+          subscriptionStatus = 
+            ['active', 'expired', 'trial', 'none'].includes(subscription.subscription_status) 
+              ? subscription.subscription_status as 'active' | 'expired' | 'trial' | 'none'
+              : 'none';
+          if (subscription.subscription_end) {
             subscriptionExpiry = subscription.subscription_end;
-          } else {
-            subscriptionStatus = 'expired';
-            subscriptionExpiry = subscription.subscription_end;
+          }
+          if (subscription.trial_end) {
+            trialEndsAt = subscription.trial_end;
           }
         }
 
