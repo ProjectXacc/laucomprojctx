@@ -8,8 +8,10 @@ interface User {
   matricNumber: string;
   email: string;
   profilePicture?: string;
-  subscriptionStatus: 'active' | 'expired' | 'none';
+  subscriptionStatus: 'active' | 'expired' | 'trial' | 'none';
   subscriptionExpiry?: string;
+  isOnTrial?: boolean;
+  trialEndsAt?: string;
 }
 
 interface AuthContextType {
@@ -109,17 +111,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('subscription_status', 'active')
         .maybeSingle();
 
-      if (subscription && subscription.subscription_end) {
-        const endDate = new Date(subscription.subscription_end);
+      if (subscription) {
         const now = new Date();
-        const isActive = endDate > now;
+        let isActive = false;
+        let subscriptionStatus: 'active' | 'expired' | 'trial' | 'none' = 'none';
+        let subscriptionExpiry = '';
+        let isOnTrial = false;
+        let trialEndsAt = '';
+
+        // Check if this is a trial subscription
+        if (subscription.is_trial && subscription.trial_end) {
+          const trialEndDate = new Date(subscription.trial_end);
+          isOnTrial = true;
+          trialEndsAt = subscription.trial_end;
+          
+          if (trialEndDate > now) {
+            isActive = true;
+            subscriptionStatus = 'trial';
+            subscriptionExpiry = subscription.trial_end;
+          } else {
+            subscriptionStatus = 'expired';
+            subscriptionExpiry = subscription.trial_end;
+          }
+        } else if (subscription.subscription_end) {
+          // Regular subscription
+          const endDate = new Date(subscription.subscription_end);
+          if (endDate > now) {
+            isActive = true;
+            subscriptionStatus = 'active';
+            subscriptionExpiry = subscription.subscription_end;
+          } else {
+            subscriptionStatus = 'expired';
+            subscriptionExpiry = subscription.subscription_end;
+          }
+        }
+
         setHasActiveSubscription(isActive);
         
         if (user) {
           setUser({
             ...user,
-            subscriptionStatus: isActive ? 'active' : 'expired',
-            subscriptionExpiry: subscription.subscription_end
+            subscriptionStatus,
+            subscriptionExpiry,
+            isOnTrial,
+            trialEndsAt
           });
         }
       } else {

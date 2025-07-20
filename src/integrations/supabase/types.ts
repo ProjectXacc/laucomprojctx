@@ -130,10 +130,12 @@ export type Database = {
           amount: number | null
           created_at: string
           id: string
+          is_trial: boolean | null
           payment_reference: string | null
           subscription_end: string | null
           subscription_start: string | null
           subscription_status: string
+          trial_end: string | null
           updated_at: string
           user_id: string
         }
@@ -141,10 +143,12 @@ export type Database = {
           amount?: number | null
           created_at?: string
           id?: string
+          is_trial?: boolean | null
           payment_reference?: string | null
           subscription_end?: string | null
           subscription_start?: string | null
           subscription_status?: string
+          trial_end?: string | null
           updated_at?: string
           user_id: string
         }
@@ -152,10 +156,12 @@ export type Database = {
           amount?: number | null
           created_at?: string
           id?: string
+          is_trial?: boolean | null
           payment_reference?: string | null
           subscription_end?: string | null
           subscription_start?: string | null
           subscription_status?: string
+          trial_end?: string | null
           updated_at?: string
           user_id?: string
         }

@@ -33,14 +33,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
   const getSubscriptionBadge = () => {
     if (!user) return null;
     
-    const badgeVariant = user.subscriptionStatus === 'active' ? 'default' : 'destructive';
-    const badgeText = user.subscriptionStatus === 'active' ? 'Active' : 
-                      user.subscriptionStatus === 'expired' ? 'Expired' : 'No Subscription';
+    let badgeVariant: 'default' | 'destructive' | 'secondary' = 'destructive';
+    let badgeText = 'No Subscription';
+    
+    if (user.subscriptionStatus === 'active') {
+      badgeVariant = 'default';
+      badgeText = 'Active';
+    } else if (user.subscriptionStatus === 'trial') {
+      badgeVariant = 'secondary';
+      badgeText = 'Free Trial';
+    } else if (user.subscriptionStatus === 'expired') {
+      badgeVariant = 'destructive';
+      badgeText = 'Expired';
+    }
     
     return <Badge variant={badgeVariant}>{badgeText}</Badge>;
   };
 
-  const canAccessQuiz = user?.subscriptionStatus === 'active';
+  const canAccessQuiz = user?.subscriptionStatus === 'active' || user?.subscriptionStatus === 'trial';
 
   const handleSubscribe = async () => {
     try {
@@ -150,12 +160,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {user?.subscriptionStatus === 'active' ? 'Active' : 'Inactive'}
+                {user?.subscriptionStatus === 'active' ? 'Active' : 
+                 user?.subscriptionStatus === 'trial' ? 'Free Trial' : 'Inactive'}
               </div>
               <p className="text-xs text-muted-foreground">
-                {user?.subscriptionExpiry ? 
-                  `Expires: ${new Date(user.subscriptionExpiry).toLocaleDateString()}` : 
-                  'Subscribe to access all features'
+                {user?.subscriptionStatus === 'trial' && user?.trialEndsAt ? 
+                  `Trial ends: ${new Date(user.trialEndsAt).toLocaleDateString()}` :
+                  user?.subscriptionExpiry ? 
+                    `Expires: ${new Date(user.subscriptionExpiry).toLocaleDateString()}` : 
+                    'Subscribe to access all features'
                 }
               </p>
             </CardContent>
