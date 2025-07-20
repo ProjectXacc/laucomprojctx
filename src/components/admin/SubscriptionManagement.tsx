@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -20,7 +22,9 @@ import {
   UserCheck,
   UserX,
   Clock,
-  AlertTriangle
+  AlertTriangle,
+  Save,
+  X
 } from 'lucide-react';
 
 interface UserSubscription {
@@ -61,6 +65,10 @@ export const SubscriptionManagement: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [editingUser, setEditingUser] = useState<UserSubscription | null>(null);
+  const [newStatus, setNewStatus] = useState<string>('');
+  const [newEndDate, setNewEndDate] = useState<string>('');
+  const [isUpdating, setIsUpdating] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -237,6 +245,75 @@ export const SubscriptionManagement: React.FC = () => {
     if (diffDays === 1) return '1 day left';
     return `${diffDays} days left`;
   };
+
+  const handleEditUser = (user: UserSubscription) => {
+    setEditingUser(user);
+    setNewStatus(user.subscription_status);
+    
+    // Set default end date based on current status
+    if (user.subscription_end) {
+      const endDate = new Date(user.subscription_end);
+      setNewEndDate(endDate.toISOString().split('T')[0]);
+    } else {
+      // Default to 30 days from now for new subscriptions
+      const defaultEndDate = new Date();
+      defaultEndDate.setDate(defaultEndDate.getDate() + 30);
+      setNewEndDate(defaultEndDate.toISOString().split('T')[0]);
+    }
+  };
+
+  const handleUpdateSubscription = async () => {
+    if (!editingUser || !newStatus) return;
+
+    setIsUpdating(true);
+    try {
+      const updateData: any = {
+        user_id: editingUser.user_id,
+        status: newStatus,
+      };
+
+      // Only include end date for active subscriptions
+      if (newStatus === 'active' && newEndDate) {
+        updateData.subscription_end_date = new Date(newEndDate).toISOString();
+      }
+
+      const { data, error } = await supabase.functions.invoke('update-subscription-status', {
+        body: updateData
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to update subscription');
+      }
+
+      toast({
+        title: "Success",
+        description: `Subscription status updated to ${newStatus}`,
+      });
+
+      // Refresh data and close dialog
+      await fetchUserSubscriptions();
+      setEditingUser(null);
+      setNewStatus('');
+      setNewEndDate('');
+
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update subscription",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const getStatusOptions = () => [
+    { value: 'active', label: 'Active Subscription', icon: UserCheck },
+    { value: 'trial', label: 'Free Trial', icon: Clock },
+    { value: 'expired', label: 'Expired', icon: AlertTriangle },
+    { value: 'none', label: 'No Subscription', icon: UserX }
+  ];
 
   return (
     <div className="space-y-6">
@@ -415,11 +492,13 @@ export const SubscriptionManagement: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Edit className="h-3 w-3" />
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEditUser(user)}
+                          >
+                            <Edit className="h-3 w-3 mr-1" />
+                            Edit
                           </Button>
                         </div>
                       </TableCell>
@@ -431,6 +510,73 @@ export const SubscriptionManagement: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Subscription Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Subscription Status</DialogTitle>
+            <DialogDescription>
+              Update subscription for {editingUser?.user_name} ({editingUser?.user_email})
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Subscription Status</label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getStatusOptions().map((option) => {
+                    const Icon = option.icon;
+                    return (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          {option.label}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {newStatus === 'active' && (
+              <div>
+                <label className="text-sm font-medium">Subscription End Date</label>
+                <Input
+                  type="date"
+                  value={newEndDate}
+                  onChange={(e) => setNewEndDate(e.target.value)}
+                  className="mt-1"
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => setEditingUser(null)}
+                disabled={isUpdating}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdateSubscription}
+                disabled={isUpdating || !newStatus}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {isUpdating ? 'Updating...' : 'Update Status'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
