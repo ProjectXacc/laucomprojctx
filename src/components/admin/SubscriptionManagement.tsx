@@ -119,69 +119,26 @@ export const SubscriptionManagement: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // Get user profiles (this includes user_id and display_name)
-      const { data: userProfiles, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('user_id, display_name');
+      // Use the edge function to get all user subscriptions
+      const { data, error } = await supabase.functions.invoke('get-all-users-subscriptions');
 
-      if (profileError) throw profileError;
-
-      // Get all subscriptions
-      const { data: subscriptions, error: subError } = await supabase
-        .from('subscriptions')
-        .select('*');
-
-      if (subError) throw subError;
-
-      // Combine the data
-      const combinedData: UserSubscription[] = [];
-      
-      // Create a map of user profiles for quick lookup
-      const profileMap = new Map(userProfiles?.map(p => [p.user_id, p]) || []);
-      
-      // Process users from user_profiles (all registered users have profiles)
-      for (const profile of userProfiles || []) {
-        const subscription = subscriptions?.find(s => s.user_id === profile.user_id);
-        
-        // Determine subscription status
-        let subscriptionStatus: 'active' | 'expired' | 'trial' | 'none' = 'none';
-        
-        if (subscription) {
-          const now = new Date();
-          
-          if (subscription.is_trial && subscription.trial_end) {
-            const trialEnd = new Date(subscription.trial_end);
-            subscriptionStatus = trialEnd > now ? 'trial' : 'expired';
-          } else if (subscription.subscription_end) {
-            const subEnd = new Date(subscription.subscription_end);
-            subscriptionStatus = subEnd > now ? 'active' : 'expired';
-          }
-        }
-
-        combinedData.push({
-          user_id: profile.user_id,
-          user_email: 'Email not available', // Can't access auth.users directly
-          user_name: profile.display_name || 'Unknown User',
-          subscription_status: subscriptionStatus,
-          subscription_start: subscription?.subscription_start || null,
-          subscription_end: subscription?.subscription_end || null,
-          trial_end: subscription?.trial_end || null,
-          is_trial: subscription?.is_trial || false,
-          amount: subscription?.amount || null,
-          payment_reference: subscription?.payment_reference || null,
-          created_at: subscription?.created_at || new Date().toISOString(),
-          updated_at: subscription?.updated_at || new Date().toISOString()
-        });
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to fetch subscription data');
       }
 
-      setUserSubscriptions(combinedData);
-      calculateStats(combinedData);
+      if (!data || !data.data) {
+        throw new Error('No data received from server');
+      }
+
+      setUserSubscriptions(data.data);
+      calculateStats(data.data);
 
     } catch (error) {
       console.error('Error fetching user subscriptions:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch subscription data",
+        description: error instanceof Error ? error.message : "Failed to fetch subscription data",
         variant: "destructive",
       });
     } finally {
