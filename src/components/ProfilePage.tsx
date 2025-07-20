@@ -36,11 +36,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   onViewAccountSettings, 
   onViewBillingHistory 
 }) => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, refreshSubscription } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(user?.name || '');
-  const [subscription, setSubscription] = useState<any>(null);
   const [stats, setStats] = useState({
     quizzesCompleted: 0,
     averageScore: 0,
@@ -50,28 +49,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
   useEffect(() => {
     if (user) {
-      fetchUserSubscription();
       fetchUserStats();
     }
   }, [user]);
-
-  const fetchUserSubscription = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (error) throw error;
-      if (data && data.length > 0) {
-        setSubscription(data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching subscription:', error);
-    }
-  };
 
   const fetchUserStats = async () => {
     // Mock stats for now - you can implement actual quiz results tracking later
@@ -101,13 +81,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   };
 
   const getSubscriptionBadge = () => {
-    if (!subscription) return <Badge variant="secondary">No Subscription</Badge>;
+    if (!user) return <Badge variant="secondary">No Subscription</Badge>;
     
-    const badgeVariant = subscription.subscription_status === 'active' ? 'default' : 'destructive';
-    const badgeText = subscription.subscription_status === 'active' ? 'Active' : 
-                      subscription.subscription_status === 'expired' ? 'Expired' : 'Inactive';
-    
-    return <Badge variant={badgeVariant}>{badgeText}</Badge>;
+    switch (user.subscriptionStatus) {
+      case 'active':
+        return <Badge variant="default">Active</Badge>;
+      case 'trial':
+        return <Badge variant="outline">Free Trial</Badge>;
+      case 'expired':
+        return <Badge variant="destructive">Expired</Badge>;
+      default:
+        return <Badge variant="secondary">No Subscription</Badge>;
+    }
   };
 
   return (
@@ -226,10 +211,25 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
             {/* Subscription Status */}
             <Card className="shadow-lg border-0 bg-white/95 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Subscription Status
+            <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Subscription Status
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={async () => {
+                      await refreshSubscription();
+                      toast({
+                        title: "Status Refreshed",
+                        description: "Your subscription status has been updated.",
+                      });
+                    }}
+                  >
+                    Refresh
+                  </Button>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -239,18 +239,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       <span className="font-medium">Current Plan:</span>
                       {getSubscriptionBadge()}
                     </div>
-                    {subscription && subscription.subscription_end && (
+                    {user?.subscriptionExpiry && (
                       <p className="text-sm text-gray-600">
-                        Expires: {new Date(subscription.subscription_end).toLocaleDateString()}
+                        Expires: {new Date(user.subscriptionExpiry).toLocaleDateString()}
                       </p>
                     )}
-                    {subscription && subscription.amount && (
+                    {user?.isOnTrial && user?.trialEndsAt && (
                       <p className="text-sm text-gray-600">
-                        Amount: ₦{(subscription.amount / 100).toLocaleString()}
+                        Trial ends: {new Date(user.trialEndsAt).toLocaleDateString()}
                       </p>
                     )}
                   </div>
-                  {(!subscription || subscription.subscription_status !== 'active') && (
+                  {user?.subscriptionStatus !== 'active' && (
                     <Button 
                       className="bg-gradient-to-r from-green-500 to-emerald-600"
                       onClick={async () => {
