@@ -104,6 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkSubscription = async () => {
     if (!session?.user) return;
     
+    console.log('Checking subscription for user:', session.user.id);
     try {
       const { data: subscription } = await supabase
         .from('subscriptions')
@@ -111,6 +112,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false })
         .maybeSingle();
+
+      console.log('Subscription data from DB:', subscription);
 
       if (subscription) {
         const now = new Date();
@@ -171,6 +174,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         setHasActiveSubscription(isActive);
         
+        console.log('Setting subscription status:', {
+          subscriptionStatus,
+          isActive,
+          subscriptionExpiry,
+          isOnTrial,
+          trialEndsAt
+        });
         if (user) {
           setUser({
             ...user,

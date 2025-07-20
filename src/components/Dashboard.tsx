@@ -32,9 +32,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onStartQuiz, onViewProfile
   const { toast } = useToast();
 
   const handleRefreshSubscription = async () => {
+    console.log('Manually refreshing subscription...');
     await refreshSubscription();
     toast({
-      title: "Subscription Status Refreshed",
+      title: "Subscription Status Refreshed", 
       description: "Your subscription status has been updated.",
     });
   };
