@@ -102,10 +102,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkSubscription = async () => {
-    if (!session?.user) return;
+    if (!session?.user) {
+      console.log('No session or user, skipping subscription check');
+      return;
+    }
     
     console.log('Checking subscription for user:', session.user.id);
+    console.log('Session details:', { 
+      userId: session.user.id, 
+      email: session.user.email, 
+      accessToken: session.access_token ? 'present' : 'missing' 
+    });
+    
     try {
+      // Add a small delay to ensure auth context is fully established
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const { data: subscriptions, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -114,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .limit(1);
 
       console.log('Subscription query error:', error);
-      console.log('Subscription data from DB:', subscriptions);
+      console.log('Subscription query result:', { subscriptions, count: subscriptions?.length });
       
       if (error) {
         console.error('Error fetching subscription:', error);
