@@ -25,75 +25,8 @@ interface AdminDashboardProps {
   onEditPassword: () => void;
 }
 
-interface Subscription {
-  id: string;
-  user_id: string;
-  subscription_status: string;
-  subscription_start: string;
-  subscription_end: string;
-  amount: number;
-  payment_reference: string;
-  created_at: string;
-}
-
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onEditPassword }) => {
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeSubscriptions: 0,
-    monthlyRevenue: 0,
-    expiredSubscriptions: 0
-  });
-  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
-  useEffect(() => {
-    fetchSubscriptions();
-  }, []);
-
-  const fetchSubscriptions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setSubscriptions(data || []);
-      
-      // Calculate stats
-      const active = data?.filter(sub => sub.subscription_status === 'active').length || 0;
-      const expired = data?.filter(sub => sub.subscription_status === 'expired').length || 0;
-      const revenue = data?.reduce((sum, sub) => sum + (sub.amount || 0), 0) || 0;
-
-      setStats({
-        totalUsers: data?.length || 0,
-        activeSubscriptions: active,
-        monthlyRevenue: revenue,
-        expiredSubscriptions: expired
-      });
-    } catch (error) {
-      console.error('Error fetching subscriptions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch subscription data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      active: 'default',
-      expired: 'destructive',
-      none: 'secondary'
-    } as const;
-    
-    return <Badge variant={variants[status as keyof typeof variants] || 'secondary'}>{status}</Badge>;
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
@@ -126,52 +59,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onEdit
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Users</CardTitle>
-              <Users className="h-4 w-4 opacity-90" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-              <p className="text-xs opacity-90">Registered users</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Active Subscriptions</CardTitle>
-              <TrendingUp className="h-4 w-4 opacity-90" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeSubscriptions}</div>
-              <p className="text-xs opacity-90">Currently active</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Monthly Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 opacity-90" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₦{(stats.monthlyRevenue / 100).toLocaleString()}</div>
-              <p className="text-xs opacity-90">Total collected</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Expired</CardTitle>
-              <Calendar className="h-4 w-4 opacity-90" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.expiredSubscriptions}</div>
-              <p className="text-xs opacity-90">Need renewal</p>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Enhanced Subscription Management */}
         <SubscriptionManagement />
