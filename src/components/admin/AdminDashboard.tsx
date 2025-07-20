@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { SubscriptionManagement } from './SubscriptionManagement';
 import { 
   Users, 
   CreditCard, 
@@ -172,79 +173,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onEdit
           </Card>
         </div>
 
-        {/* Subscriptions Table */}
-        <Card className="shadow-xl border-0 bg-white/95 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Subscription Management
-            </CardTitle>
-            <CardDescription>
-              Monitor and manage user subscriptions
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User ID</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Start Date</TableHead>
-                    <TableHead>End Date</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subscriptions.map((subscription) => (
-                    <TableRow key={subscription.id}>
-                      <TableCell className="font-mono text-xs">
-                        {subscription.user_id.substring(0, 8)}...
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(subscription.subscription_status)}
-                      </TableCell>
-                      <TableCell>
-                        {subscription.subscription_start ? 
-                          new Date(subscription.subscription_start).toLocaleDateString() : 
-                          'N/A'
-                        }
-                      </TableCell>
-                      <TableCell>
-                        {subscription.subscription_end ? 
-                          new Date(subscription.subscription_end).toLocaleDateString() : 
-                          'N/A'
-                        }
-                      </TableCell>
-                      <TableCell>
-                        ₦{subscription.amount ? (subscription.amount / 100).toLocaleString() : '0'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {subscription.payment_reference || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button size="sm" variant="outline">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {/* Enhanced Subscription Management */}
+        <SubscriptionManagement />
       </div>
     </div>
   );
