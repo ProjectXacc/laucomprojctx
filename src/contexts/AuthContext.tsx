@@ -113,7 +113,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .order('created_at', { ascending: false })
         .limit(1);
 
+      console.log('Subscription query error:', error);
       console.log('Subscription data from DB:', subscriptions);
+      
+      if (error) {
+        console.error('Error fetching subscription:', error);
+        setHasActiveSubscription(false);
+        return;
+      }
+      
       const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
 
       if (subscription) {
