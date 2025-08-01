@@ -104,12 +104,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkSubscription = async () => {
     if (!session?.user?.id) {
       console.log('No session or user ID, skipping subscription check');
+      setHasActiveSubscription(false);
       return;
     }
     
     console.log('Checking subscription for user:', session.user.id);
     
     try {
+      // Clear any existing state first
+      setHasActiveSubscription(false);
+      
+      // Get the most recent subscription record
       const { data: subscriptions, error } = await supabase
         .from('subscriptions')
         .select('*')
@@ -123,7 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      console.log('Subscription data retrieved:', subscriptions);
+      console.log('Latest subscription data:', subscriptions);
       
       const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
 
