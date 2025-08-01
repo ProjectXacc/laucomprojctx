@@ -102,37 +102,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const checkSubscription = async () => {
-    if (!session?.user) {
-      console.log('No session or user, skipping subscription check');
+    if (!session?.user?.id) {
+      console.log('No session or user ID, skipping subscription check');
       return;
     }
     
     console.log('Checking subscription for user:', session.user.id);
-    console.log('Session details:', { 
-      userId: session.user.id, 
-      email: session.user.email, 
-      accessToken: session.access_token ? 'present' : 'missing' 
-    });
     
     try {
-      // Add a small delay to ensure auth context is fully established
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
       const { data: subscriptions, error } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1);
 
-      console.log('Subscription query error:', error);
-      console.log('Subscription query result:', { subscriptions, count: subscriptions?.length });
-      
       if (error) {
         console.error('Error fetching subscription:', error);
         setHasActiveSubscription(false);
         return;
       }
+
+      console.log('Subscription data retrieved:', subscriptions);
       
       const subscription = subscriptions && subscriptions.length > 0 ? subscriptions[0] : null;
 
@@ -314,6 +305,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const refreshSubscription = async () => {
+    console.log('Manually refreshing subscription...');
+    setHasActiveSubscription(false); // Reset state first
     await checkSubscription();
   };
 
