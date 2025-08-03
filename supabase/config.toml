@@ -24,6 +24,9 @@ verify_jwt = true
 [functions.verify-paystack-payment]
 verify_jwt = false
 
+[functions.handle-payment-success]
+verify_jwt = true
+
 [db]
 port = 54325
 major_version = 15

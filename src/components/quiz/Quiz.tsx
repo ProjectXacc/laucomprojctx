@@ -44,7 +44,7 @@ interface Answer {
 }
 
 export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) => {
-  const { user, hasActiveSubscription } = useAuth();
+  const { user, hasActiveSubscription, checkSubscription } = useAuth();
   const { toast } = useToast();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -194,9 +194,11 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
     return (
       <PaymentPrompt 
         onBack={onBack}
-        onPaymentSuccess={() => {
+        onPaymentSuccess={async () => {
+          // Refresh subscription status first
+          await checkSubscription();
           setShowPaymentPrompt(false);
-          fetchQuestions();
+          // Questions will be fetched automatically when hasActiveSubscription updates
         }}
       />
     );

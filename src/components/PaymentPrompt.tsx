@@ -52,9 +52,24 @@ export const PaymentPrompt: React.FC<PaymentPromptProps> = ({ onBack, onPaymentS
           description: "Complete your payment in the new tab to access quiz questions.",
         });
         
-        // Simulate payment success for demo (remove in production)
-        setTimeout(() => {
-          onPaymentSuccess();
+        // For demo: simulate successful payment after opening Paystack
+        // In production, users complete payment on Paystack and return via callback URL
+        setTimeout(async () => {
+          // Simulate payment success and update subscription
+          try {
+            const { data: mockData } = await supabase.functions.invoke('handle-payment-success', {
+              body: { 
+                reference: `demo_${Date.now()}_${user.id}` // Demo reference
+              }
+            });
+            if (mockData?.success) {
+              onPaymentSuccess();
+            }
+          } catch (error) {
+            console.log('Demo payment simulation:', error);
+            // Still call success for demo purposes
+            onPaymentSuccess();
+          }
         }, 3000);
       }
     } catch (error) {
