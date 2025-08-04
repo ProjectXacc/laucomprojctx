@@ -5,9 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
   User, 
@@ -23,7 +35,7 @@ interface AccountSettingsProps {
 }
 
 export const AccountSettings: React.FC<AccountSettingsProps> = ({ onBack }) => {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { toast } = useToast();
   
@@ -35,6 +47,8 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ onBack }) => {
     darkMode: theme === 'dark',
     autoSave: true
   });
+
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleSave = async () => {
     try {
@@ -53,12 +67,36 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ onBack }) => {
     }
   };
 
-  const handleDeleteAccount = () => {
-    toast({
-      title: "Account Deletion",
-      description: "This feature is not available in the demo version.",
-      variant: "destructive",
-    });
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    
+    try {
+      // Delete user account from Supabase Auth
+      const { error } = await supabase.auth.admin.deleteUser(user?.id || '');
+      
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Account Deleted",
+        description: "Your account has been permanently deleted.",
+      });
+
+      // Sign out and redirect
+      await signOut();
+      onBack();
+      
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -231,14 +269,45 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ onBack }) => {
               </Button>
               <div className="pt-4 border-t">
                 <h4 className="font-medium text-destructive mb-2">Danger Zone</h4>
-                <Button 
-                  variant="destructive" 
-                  className="w-full"
-                  onClick={handleDeleteAccount}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Account
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      variant="destructive" 
+                      className="w-full"
+                      disabled={isDeleting}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {isDeleting ? 'Deleting...' : 'Delete Account'}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete your
+                        account and remove all your data from our servers, including:
+                        <br /><br />
+                        • Your profile information
+                        <br />
+                        • Quiz history and results
+                        <br />
+                        • Subscription details
+                        <br /><br />
+                        Type your email address to confirm: <strong>{user?.email}</strong>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDeleteAccount}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        disabled={isDeleting}
+                      >
+                        {isDeleting ? 'Deleting...' : 'Delete Account'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
                 <p className="text-xs text-muted-foreground mt-2">
                   This action cannot be undone. Your data will be permanently deleted.
                 </p>
