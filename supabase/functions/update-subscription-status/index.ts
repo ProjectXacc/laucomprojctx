@@ -33,17 +33,21 @@ serve(async (req) => {
 
     console.log(`Updating subscription for user ${user_id} to status: ${status}`);
 
-    // Check if subscription exists
-    const { data: existingSubscription, error: fetchError } = await supabaseAdmin
+    // Check if subscription exists - get the latest one
+    const { data: existingSubscriptions, error: fetchError } = await supabaseAdmin
       .from('subscriptions')
       .select('*')
       .eq('user_id', user_id)
-      .single();
+      .order('created_at', { ascending: false });
 
-    if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = not found
-      console.error("Error fetching existing subscription:", fetchError);
+    if (fetchError) {
+      console.error("Error fetching existing subscriptions:", fetchError);
       throw fetchError;
     }
+
+    const existingSubscription = existingSubscriptions && existingSubscriptions.length > 0 
+      ? existingSubscriptions[0] 
+      : null;
 
     let subscriptionData: any = {
       user_id,
@@ -103,7 +107,7 @@ serve(async (req) => {
       const { data, error } = await supabaseAdmin
         .from('subscriptions')
         .update(subscriptionData)
-        .eq('user_id', user_id)
+        .eq('id', existingSubscription.id)
         .select()
         .single();
 
