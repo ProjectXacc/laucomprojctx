@@ -91,17 +91,26 @@ export const SubscriptionManagement: React.FC = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'UPDATE',
           schema: 'public',
           table: 'subscriptions'
         },
         (payload) => {
-          console.log('Subscription change detected:', payload);
-          fetchUserSubscriptions();
-          toast({
-            title: "Real-time Update",
-            description: "Subscription data updated",
-          });
+          console.log('Subscription updated:', payload);
+          // Debounce the refresh to avoid multiple calls
+          setTimeout(() => fetchUserSubscriptions(), 500);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'subscriptions'
+        },
+        (payload) => {
+          console.log('New subscription created:', payload);
+          setTimeout(() => fetchUserSubscriptions(), 500);
         }
       )
       .on(
@@ -113,7 +122,7 @@ export const SubscriptionManagement: React.FC = () => {
         },
         (payload) => {
           console.log('User profile change detected:', payload);
-          fetchUserSubscriptions();
+          setTimeout(() => fetchUserSubscriptions(), 500);
         }
       )
       .subscribe();
@@ -213,19 +222,39 @@ export const SubscriptionManagement: React.FC = () => {
     setFilteredSubscriptions(filtered);
   };
 
-  const getStatusBadge = (status: string, isTrialExpired?: boolean) => {
+  const getStatusBadge = (status: string) => {
     const variants = {
-      active: { variant: 'default' as const, icon: UserCheck, text: 'Active' },
-      trial: { variant: 'secondary' as const, icon: Clock, text: 'Trial' },
-      expired: { variant: 'destructive' as const, icon: AlertTriangle, text: 'Expired' },
-      none: { variant: 'outline' as const, icon: UserX, text: 'No Subscription' }
+      active: { 
+        variant: 'default' as const, 
+        icon: UserCheck, 
+        text: 'Active', 
+        className: 'bg-green-500 hover:bg-green-600 text-white border-green-500' 
+      },
+      trial: { 
+        variant: 'secondary' as const, 
+        icon: Clock, 
+        text: 'Trial', 
+        className: 'bg-blue-500 hover:bg-blue-600 text-white border-blue-500' 
+      },
+      expired: { 
+        variant: 'destructive' as const, 
+        icon: AlertTriangle, 
+        text: 'Expired', 
+        className: 'bg-red-500 hover:bg-red-600 text-white border-red-500' 
+      },
+      none: { 
+        variant: 'outline' as const, 
+        icon: UserX, 
+        text: 'No Subscription', 
+        className: 'bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300' 
+      }
     };
     
     const config = variants[status as keyof typeof variants] || variants.none;
     const Icon = config.icon;
     
     return (
-      <Badge variant={config.variant} className="flex items-center gap-1">
+      <Badge variant="outline" className={`flex items-center gap-1 ${config.className}`}>
         <Icon className="h-3 w-3" />
         {config.text}
       </Badge>
