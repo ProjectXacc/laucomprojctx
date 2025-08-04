@@ -61,14 +61,22 @@ serve(async (req) => {
       let subscriptionStatus = 'none';
       
       if (subscription) {
-        const now = new Date();
-        
-        if (subscription.is_trial && subscription.trial_end) {
-          const trialEnd = new Date(subscription.trial_end);
-          subscriptionStatus = trialEnd > now ? 'trial' : 'expired';
-        } else if (subscription.subscription_end) {
-          const subEnd = new Date(subscription.subscription_end);
-          subscriptionStatus = subEnd > now ? 'active' : 'expired';
+        // First check the subscription_status field from the database
+        if (subscription.subscription_status === 'active') {
+          subscriptionStatus = 'active';
+        } else if (subscription.subscription_status === 'expired') {
+          subscriptionStatus = 'expired';
+        } else {
+          // Fallback to date-based calculation for trial and other cases
+          const now = new Date();
+          
+          if (subscription.is_trial && subscription.trial_end) {
+            const trialEnd = new Date(subscription.trial_end);
+            subscriptionStatus = trialEnd > now ? 'trial' : 'expired';
+          } else if (subscription.subscription_end) {
+            const subEnd = new Date(subscription.subscription_end);
+            subscriptionStatus = subEnd > now ? 'active' : 'expired';
+          }
         }
       }
 
