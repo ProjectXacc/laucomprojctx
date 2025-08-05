@@ -67,26 +67,12 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ onBack }) => {
     }
   };
 
-  const handleDeleteAccount = async () => {
-    setIsDeleting(true);
-    
-    try {
-      toast({
-        title: "Account Deletion",
-        description: "This feature will be available soon. Please contact support for account deletion.",
-        variant: "destructive",
-      });
-      
-    } catch (error: any) {
-      console.error('Error deleting account:', error);
-      toast({
-        title: "Error",
-        description: "Failed to process account deletion request.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDeleting(false);
-    }
+  const handleDeleteAccount = () => {
+    toast({
+      title: "Account Deletion",
+      description: "This feature will be available soon. Please contact support for account deletion.",
+      variant: "destructive",
+    });
   };
 
   return (
