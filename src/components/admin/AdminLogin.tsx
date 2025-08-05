@@ -25,40 +25,13 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onBack }) => 
     setIsLoading(true);
 
     try {
-      // First authenticate with Supabase
+      // First try regular Supabase auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (authError) {
-        // If regular auth fails, try admin login
-        const { data: adminData, error: adminError } = await supabase
-          .from('admin_users')
-          .select('*')
-          .eq('email', email)
-          .single();
-
-        if (adminError || !adminData) {
-          throw new Error('Invalid admin credentials');
-        }
-
-        // Verify password
-        const isValidPassword = await bcrypt.compare(password, adminData.password_hash);
-        if (!isValidPassword) {
-          throw new Error('Invalid admin credentials');
-        }
-
-        // Create admin session by signing up with temp password then updating
-        const { error: signUpError } = await supabase.auth.signUp({
-          email,
-          password: 'temp_admin_pass_123',
-        });
-
-        if (!signUpError) {
-          onSuccess();
-        }
-      } else {
+      if (!authError && authData.user) {
         // Check if user is admin
         const { data: adminData } = await supabase
           .from('admin_users')
@@ -67,16 +40,40 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onBack }) => 
           .single();
 
         if (adminData) {
+          toast({
+            title: "Login Successful",
+            description: "Welcome to the admin panel!",
+          });
           onSuccess();
+          return;
         } else {
           throw new Error('Not an admin user');
         }
       }
 
+      // If regular auth fails, try admin authentication using database function
+      const { data: adminAuthResult, error: adminAuthError } = await supabase
+        .rpc('authenticate_admin', {
+          admin_email: email,
+          admin_password: password
+        });
+
+      if (adminAuthError || !adminAuthResult || adminAuthResult.length === 0) {
+        throw new Error('Invalid admin credentials');
+      }
+
+      const authResult = adminAuthResult[0];
+      if (!authResult.success) {
+        throw new Error(authResult.message);
+      }
+
+      // Admin authentication successful
       toast({
         title: "Login Successful",
         description: "Welcome to the admin panel!",
       });
+      onSuccess();
+
     } catch (error) {
       console.error('Admin login error:', error);
       toast({
