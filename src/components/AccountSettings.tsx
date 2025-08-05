@@ -71,27 +71,17 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ onBack }) => {
     setIsDeleting(true);
     
     try {
-      // Delete user account from Supabase Auth
-      const { error } = await supabase.auth.admin.deleteUser(user?.id || '');
-      
-      if (error) {
-        throw error;
-      }
-
       toast({
-        title: "Account Deleted",
-        description: "Your account has been permanently deleted.",
+        title: "Account Deletion",
+        description: "This feature will be available soon. Please contact support for account deletion.",
+        variant: "destructive",
       });
-
-      // Sign out and redirect
-      await signOut();
-      onBack();
       
     } catch (error: any) {
       console.error('Error deleting account:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete account. Please try again.",
+        description: "Failed to process account deletion request.",
         variant: "destructive",
       });
     } finally {
