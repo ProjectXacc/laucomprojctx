@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { quizCategories } from '@/data/quizData';
 import { Upload, FileText, CheckCircle, AlertCircle, Type } from 'lucide-react';
 
 interface QuizQuestion {
@@ -236,13 +237,37 @@ export const QuizManagement: React.FC = () => {
     }
   ];
 
-  const quizBlocks = [
-    { value: "block1", label: "Block 1" },
-    { value: "block2", label: "Block 2" },
-    { value: "block3", label: "Block 3" },
-    { value: "block4", label: "Block 4" },
-    { value: "block5", label: "Block 5" },
-  ];
+  // Get all available blocks from quiz data
+  const getAllBlocks = () => {
+    const blocks: { value: string; label: string; category: string; subject: string }[] = [];
+    
+    quizCategories.forEach(category => {
+      category.subjects.forEach(subject => {
+        if (subject.blocks) {
+          subject.blocks.forEach(block => {
+            blocks.push({
+              value: block.id,
+              label: `${category.name} > ${subject.name} > ${block.name}`,
+              category: category.id,
+              subject: subject.id
+            });
+          });
+        } else if (!subject.isMasterBlock) {
+          // For subjects without blocks, treat the subject itself as a block
+          blocks.push({
+            value: subject.id,
+            label: `${category.name} > ${subject.name}`,
+            category: category.id,
+            subject: subject.id
+          });
+        }
+      });
+    });
+    
+    return blocks;
+  };
+
+  const availableBlocks = getAllBlocks();
 
   return (
     <Card className="w-full">
@@ -264,7 +289,7 @@ export const QuizManagement: React.FC = () => {
               <SelectValue placeholder="Choose a quiz block" />
             </SelectTrigger>
             <SelectContent>
-              {quizBlocks.map((block) => (
+              {availableBlocks.map((block) => (
                 <SelectItem key={block.value} value={block.value}>
                   {block.label}
                 </SelectItem>
