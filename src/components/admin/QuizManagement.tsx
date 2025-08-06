@@ -37,30 +37,41 @@ export const QuizManagement: React.FC = () => {
   } | null>(null);
 
   const validateQuizQuestion = (question: any, blockId?: string): QuizQuestion | null => {
-    // Required fields validation
-    const requiredFields = ['question', 'option_a', 'option_b', 'option_c', 'option_d', 'correct_answer', 'category_id', 'subject_id'];
-    for (const field of requiredFields) {
-      if (!question[field] && question[field] !== 0) {
-        throw new Error(`Missing required field: ${field}`);
-      }
+    if (!question.question || !Array.isArray(question.options) || question.options.length !== 4) {
+      throw new Error('Question must have a question field and options array with 4 items');
     }
 
-    // Validate correct_answer is between 1-4
-    if (![1, 2, 3, 4].includes(question.correct_answer)) {
-      throw new Error('correct_answer must be 1, 2, 3, or 4');
+    if (!question.answer || typeof question.answer !== 'string') {
+      throw new Error('Question must have an answer field with string value');
     }
 
-    // Set default difficulty if not provided
-    if (!question.difficulty_level) {
-      question.difficulty_level = 'medium';
+    // Find the index of the correct answer in the options array
+    const correctAnswerIndex = question.options.findIndex((option: string) => 
+      option.toLowerCase().trim() === question.answer.toLowerCase().trim()
+    );
+
+    if (correctAnswerIndex === -1) {
+      throw new Error(`Answer "${question.answer}" not found in options`);
     }
 
-    // Set block_id if provided
-    if (blockId) {
-      question.block_id = blockId;
+    const selectedBlock = getAllBlocks().find(block => block.value === blockId);
+    if (!selectedBlock) {
+      throw new Error('Invalid block selected');
     }
 
-    return question as QuizQuestion;
+    return {
+      question: question.question,
+      option_a: question.options[0],
+      option_b: question.options[1], 
+      option_c: question.options[2],
+      option_d: question.options[3],
+      correct_answer: correctAnswerIndex + 1, // Convert to 1-based index
+      explanation: question.explanation || null,
+      category_id: selectedBlock.category,
+      subject_id: selectedBlock.subject,
+      block_id: blockId || null,
+      difficulty_level: question.difficulty || 'medium'
+    };
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -224,16 +235,14 @@ export const QuizManagement: React.FC = () => {
 
   const sampleFormat = [
     {
-      "question": "What is the capital of France?",
-      "option_a": "London",
-      "option_b": "Berlin",
-      "option_c": "Paris",
-      "option_d": "Madrid",
-      "correct_answer": 3,
-      "explanation": "Paris is the capital and largest city of France.",
-      "category_id": "geography",
-      "subject_id": "world_capitals",
-      "difficulty_level": "easy"
+      "question": "Which bone is found in the upper arm?",
+      "options": ["Humerus", "Femur", "Radius", "Tibia"],
+      "answer": "Humerus"
+    },
+    {
+      "question": "What is the primary action of the biceps brachii muscle?",
+      "options": ["Flexion of the forearm", "Extension of the forearm", "Rotation of the shoulder", "Abduction of the arm"],
+      "answer": "Flexion of the forearm"
     }
   ];
 
@@ -392,9 +401,9 @@ export const QuizManagement: React.FC = () => {
             className="font-mono text-sm"
           />
           <p className="text-sm text-muted-foreground">
-            <strong>Required fields:</strong> question, option_a, option_b, option_c, option_d, correct_answer (1-4), category_id, subject_id
+            <strong>Required fields:</strong> question, options (array of 4 strings), answer (exact match to one option)
             <br />
-            <strong>Optional fields:</strong> explanation, block_id, difficulty_level (defaults to 'medium')
+            <strong>Optional fields:</strong> explanation, difficulty (defaults to 'medium')
           </p>
         </div>
       </CardContent>
