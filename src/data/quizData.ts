@@ -39,30 +39,22 @@ export const quizCategories: QuizCategory[] = [
         name: 'Anatomy',
         questionCount: 0,
         blocks: [
-          { id: 'upper-limb', name: 'Upper Limb', questionCount: 50 },
-          { id: 'lower-limb', name: 'Lower Limb', questionCount: 45 },
-          { id: 'thorax', name: 'Thorax', questionCount: 40 },
-          { id: 'abdomen', name: 'Abdomen', questionCount: 42 },
-          { id: 'tapp', name: 'Pelvic & Perineum (TAPP)', questionCount: 35 },
-          { id: 'head-neck', name: 'Head & Neck', questionCount: 48 },
-          { id: 'neuroanatomy', name: 'Neuroanatomy', questionCount: 55 }
+          { id: 'upper-lower-limbs', name: 'Upper and Lower Limbs', questionCount: 95 },
+          { id: 'thorax-abdomen-pelvic', name: 'Thorax Abdomen Pelvic Perineum', questionCount: 117 },
+          { id: 'head-neck-neuro', name: 'Head Neck and Neuro', questionCount: 103 },
+          { id: 'anatomy-mb', name: 'Anatomy MB', questionCount: 315 }
         ]
       },
       {
-        id: 'histology',
-        name: 'Histology',
-        questionCount: 60,
-      },
-      {
-        id: 'embryology',
-        name: 'Embryology',
-        questionCount: 45,
-      },
-      {
-        id: 'mb-anatomy',
-        name: 'MB Anatomy',
-        questionCount: 315,
-        isMasterBlock: true
+        id: 'biochemistry',
+        name: 'Biochemistry',
+        questionCount: 0,
+        blocks: [
+          { id: 'block-1', name: 'Block 1', questionCount: 35 },
+          { id: 'block-2', name: 'Block 2', questionCount: 37 },
+          { id: 'block-3', name: 'Block 3', questionCount: 33 },
+          { id: 'biochemistry-mb', name: 'Biochemistry MB', questionCount: 105 }
+        ]
       },
       {
         id: 'physiology',
@@ -74,30 +66,9 @@ export const quizCategories: QuizCategory[] = [
           { id: 'block-3', name: 'Block 3', questionCount: 38 },
           { id: 'block-4', name: 'Block 4', questionCount: 41 },
           { id: 'block-5', name: 'Block 5', questionCount: 39 },
-          { id: 'block-6', name: 'Block 6', questionCount: 44 }
+          { id: 'block-6', name: 'Block 6', questionCount: 44 },
+          { id: 'physiology-mb', name: 'Physiology MB', questionCount: 244 }
         ]
-      },
-      {
-        id: 'mb-physiology',
-        name: 'MB Physiology',
-        questionCount: 244,
-        isMasterBlock: true
-      },
-      {
-        id: 'biochemistry',
-        name: 'Biochemistry',
-        questionCount: 0,
-        blocks: [
-          { id: 'block-1', name: 'Block 1', questionCount: 35 },
-          { id: 'block-2', name: 'Block 2', questionCount: 37 },
-          { id: 'block-3', name: 'Block 3', questionCount: 33 }
-        ]
-      },
-      {
-        id: 'mb-biochemistry',
-        name: 'MB Biochemistry',
-        questionCount: 105,
-        isMasterBlock: true
       }
     ]
   },
@@ -110,27 +81,10 @@ export const quizCategories: QuizCategory[] = [
         name: 'Microbiology',
         questionCount: 0,
         blocks: [
-          { id: 'block-1', name: 'Block 1: Bacteriology & Mycology', questionCount: 45 },
-          { id: 'block-2', name: 'Block 2: Mycology & Virology', questionCount: 42 },
-          { id: 'block-3', name: 'Block 3: Parasitology', questionCount: 38 }
-        ]
-      },
-      {
-        id: 'pathology',
-        name: 'Pathology',
-        questionCount: 0,
-        blocks: [
-          { id: 'block-1', name: 'Block 1', questionCount: 40 },
-          { id: 'block-2', name: 'Block 2', questionCount: 41 }
-        ]
-      },
-      {
-        id: 'chemical-pathology',
-        name: 'Chemical Pathology',
-        questionCount: 0,
-        blocks: [
-          { id: 'block-1', name: 'Block 1', questionCount: 35 },
-          { id: 'block-2', name: 'Block 2', questionCount: 37 }
+          { id: 'bacteriology-mycology', name: 'Bacteriology and Mycology', questionCount: 45 },
+          { id: 'virology-mycology', name: 'Virology and Mycology', questionCount: 42 },
+          { id: 'parasitology', name: 'Parasitology', questionCount: 38 },
+          { id: 'microbiology-mb', name: 'Microbiology MB', questionCount: 125 }
         ]
       },
       {
@@ -138,8 +92,9 @@ export const quizCategories: QuizCategory[] = [
         name: 'Hematology',
         questionCount: 0,
         blocks: [
-          { id: 'block-1', name: 'Block 1', questionCount: 32 },
-          { id: 'block-2', name: 'Block 2', questionCount: 34 }
+          { id: 'first-block', name: 'First Block', questionCount: 32 },
+          { id: 'second-block', name: 'Second Block', questionCount: 34 },
+          { id: 'hematology-mb', name: 'Hematology MB', questionCount: 66 }
         ]
       },
       {
@@ -147,15 +102,30 @@ export const quizCategories: QuizCategory[] = [
         name: 'Pharmacology',
         questionCount: 0,
         blocks: [
-          { id: 'block-1', name: 'Block 1', questionCount: 38 },
-          { id: 'block-2', name: 'Block 2', questionCount: 40 }
+          { id: 'first-block', name: 'First Block', questionCount: 38 },
+          { id: 'second-block', name: 'Second Block', questionCount: 40 },
+          { id: 'pharmacology-mb', name: 'Pharmacology MB', questionCount: 78 }
         ]
       },
       {
-        id: 'mb-path-pharm',
-        name: 'MB Path & Pharm',
-        questionCount: 482,
-        isMasterBlock: true
+        id: 'pathology',
+        name: 'Pathology',
+        questionCount: 0,
+        blocks: [
+          { id: 'first-block', name: 'First Block', questionCount: 40 },
+          { id: 'second-block', name: 'Second Block', questionCount: 41 },
+          { id: 'pathology-mb', name: 'Pathology MB', questionCount: 81 }
+        ]
+      },
+      {
+        id: 'chempath',
+        name: 'Chempath',
+        questionCount: 0,
+        blocks: [
+          { id: 'first-block', name: 'First Block', questionCount: 35 },
+          { id: 'second-block', name: 'Second Block', questionCount: 37 },
+          { id: 'chempath-mb', name: 'Chempath MB', questionCount: 72 }
+        ]
       }
     ]
   }
