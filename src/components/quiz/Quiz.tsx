@@ -81,6 +81,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
       const allQuestions: Question[] = [];
       
       for (const selection of selections) {
+        console.log('Fetching questions for selection:', selection);
         let query = supabase
           .from('quiz_questions')
           .select('*')
@@ -97,9 +98,12 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
           throw error;
         }
         if (data) {
+          console.log('Found questions for selection:', data.length, data);
           allQuestions.push(...data);
         }
       }
+      
+      console.log('Total questions loaded:', allQuestions.length);
       
       if (allQuestions.length === 0) {
         toast({
