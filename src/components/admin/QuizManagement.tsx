@@ -62,10 +62,11 @@ export const QuizManagement: React.FC = () => {
     return {
       question: question.question,
       option_a: question.options[0],
-      option_b: question.options[1], 
+      option_b: question.options[1],
       option_c: question.options[2],
       option_d: question.options[3],
-      correct_answer: correctAnswerIndex + 1, // Convert to 1-based index
+      // Store as 0-based to satisfy DB constraint (0..3)
+      correct_answer: correctAnswerIndex,
       explanation: question.explanation || null,
       category_id: selectedBlock.category,
       subject_id: selectedBlock.subject,
@@ -123,6 +124,7 @@ export const QuizManagement: React.FC = () => {
         .insert(validQuestions);
 
       if (error) {
+        console.error('Supabase insert error:', error);
         throw error;
       }
 
@@ -205,6 +207,7 @@ export const QuizManagement: React.FC = () => {
         .insert(validQuestions);
 
       if (error) {
+        console.error('Supabase insert error:', error);
         throw error;
       }
 

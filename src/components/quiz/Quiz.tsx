@@ -138,7 +138,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
     if (selectedOption === null) return;
     
     const question = questions[currentQuestionIndex];
-    const isCorrect = selectedOption === question.correct_answer;
+    const isCorrect = selectedOption === (question.correct_answer + 1);
     
     const answer: Answer = {
       questionId: question.id,
@@ -333,7 +333,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
               {options.map((option, index) => {
                 const optionNumber = index + 1;
                 const isSelected = selectedOption === optionNumber;
-                const isCorrect = currentQuestion.correct_answer === optionNumber;
+                const isCorrect = currentQuestion.correct_answer + 1 === optionNumber;
                 
                 let buttonVariant: "default" | "outline" | "secondary" | "destructive" | "ghost" | "link" = "outline";
                 let className = "";

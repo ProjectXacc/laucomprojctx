@@ -28,6 +28,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
 }) => {
   const [selectedItems, setSelectedItems] = useState<QuizSelection[]>([]);
   const [timerMinutes, setTimerMinutes] = useState(30);
+  const [questionsPerTopic, setQuestionsPerTopic] = useState<number>(20);
 
   const category = quizCategories.find(c => c.id === categoryId);
   
@@ -71,6 +72,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
   };
 
   const totalQuestions = selectedItems.reduce((sum, item) => sum + item.questionCount, 0);
+  const limitedTotal = selectedItems.reduce((sum, item) => sum + Math.min(item.questionCount, questionsPerTopic), 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -180,7 +182,31 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                     </Button>
                   </div>
                 </div>
-
+                
+                <div>
+                  <label className="text-sm font-medium">Questions per topic</label>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuestionsPerTopic(Math.max(1, questionsPerTopic - 5))}
+                    >
+                      -
+                    </Button>
+                    <span className="flex-1 text-center font-mono">
+                      {questionsPerTopic}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuestionsPerTopic(Math.min(200, questionsPerTopic + 5))}
+                    >
+                      +
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">We'll cap each selected topic to this number.</p>
+                </div>
+                
                 <div className="border-t pt-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">Selected Topics:</span>
@@ -191,7 +217,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                     <span className="text-sm font-medium">Total Questions:</span>
                     <div className="flex items-center space-x-1">
                       <BookOpen className="h-4 w-4" />
-                      <span className="font-mono">{totalQuestions}</span>
+                      <span className="font-mono">{limitedTotal}</span>
                     </div>
                   </div>
 
@@ -199,17 +225,17 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                     <span className="text-sm font-medium">Estimated Time:</span>
                     <div className="flex items-center space-x-1">
                       <Clock className="h-4 w-4" />
-                      <span className="font-mono">{Math.ceil(totalQuestions * 1.5)} min</span>
+                      <span className="font-mono">{Math.ceil(limitedTotal * 1.5)} min</span>
                     </div>
                   </div>
                 </div>
 
                 <Button 
                   className="w-full" 
-                  onClick={() => onStartQuiz(selectedItems)}
+                  onClick={() => onStartQuiz(selectedItems.map(item => ({ ...item, questionCount: Math.max(1, Math.min(item.questionCount, questionsPerTopic)) })))}
                   disabled={selectedItems.length === 0}
                 >
-                  Start Quiz ({totalQuestions} questions)
+                  Start Quiz ({limitedTotal} questions)
                 </Button>
               </CardContent>
             </Card>
