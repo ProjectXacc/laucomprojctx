@@ -1,227 +1,437 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Clock, BookOpen } from 'lucide-react';
-import { quizCategories, QuizSubject, QuizBlock } from '@/data/quizData';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { QuizSelection } from './QuizSelection';
+import { PaymentPrompt } from '@/components/PaymentPrompt';
+import { 
+  Clock, 
+  CheckCircle, 
+  XCircle, 
+  ArrowRight, 
+  ArrowLeft,
+  RotateCcw,
+  Trophy
+} from 'lucide-react';
 
-interface QuizSelectionProps {
-  categoryId: string;
+interface QuizProps {
+  selections: QuizSelection[];
   onBack: () => void;
-  onStartQuiz: (selections: QuizSelection[]) => void;
+  onComplete: () => void;
 }
 
-export interface QuizSelection {
-  subjectId: string;
-  subjectName: string;
-  blockId?: string;
-  blockName?: string;
-  questionCount: number;
+interface Question {
+  id: string;
+  question: string;
+  option_a: string;
+  option_b: string;
+  option_c: string;
+  option_d: string;
+  correct_answer: number;
+  explanation: string;
+  subject_id: string;
+  category_id: string;
 }
 
-export const QuizSelection: React.FC<QuizSelectionProps> = ({ 
-  categoryId, 
-  onBack, 
-  onStartQuiz 
-}) => {
-  const [selectedItems, setSelectedItems] = useState<QuizSelection[]>([]);
-  const [timerMinutes, setTimerMinutes] = useState(30);
-  const [questionsPerTopic, setQuestionsPerTopic] = useState<number>(20);
+interface Answer {
+  questionId: string;
+  selectedOption: number;
+  isCorrect: boolean;
+}
 
-  const category = quizCategories.find(c => c.id === categoryId);
-  
-  if (!category) {
-    return <div>Category not found</div>;
-  }
+export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) => {
+  const { user, hasActiveSubscription, checkSubscription } = useAuth();
+  const { toast } = useToast();
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [answers, setAnswers] = useState<Answer[]>([]);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [showExplanation, setShowExplanation] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes
+  const [isLoading, setIsLoading] = useState(true);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
 
-  const handleSelectionChange = (
-    subject: QuizSubject, 
-    checked: boolean,
-    block?: QuizBlock
-  ) => {
-    const selectionId = block ? `${subject.id}-${block.id}` : subject.id;
-    
-    if (checked) {
-      const newSelection: QuizSelection = {
-        subjectId: subject.id,
-        subjectName: subject.name,
-        blockId: block?.id,
-        blockName: block?.name,
-        questionCount: block?.questionCount || subject.questionCount
-      };
-      setSelectedItems(prev => [...prev, newSelection]);
-    } else {
-      setSelectedItems(prev => 
-        prev.filter(item => 
-          block ? 
-            !(item.subjectId === subject.id && item.blockId === block.id) :
-            item.subjectId !== subject.id
-        )
-      );
+  useEffect(() => {
+    // Check subscription before fetching questions
+    if (!hasActiveSubscription) {
+      setShowPaymentPrompt(true);
+      setIsLoading(false);
+      return;
+    }
+    fetchQuestions();
+  }, [hasActiveSubscription]);
+
+  useEffect(() => {
+    if (timeLeft > 0 && !quizCompleted) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (timeLeft === 0) {
+      handleCompleteQuiz();
+    }
+  }, [timeLeft, quizCompleted]);
+
+  const fetchQuestions = async () => {
+    try {
+      setIsLoading(true);
+      const allQuestions: Question[] = [];
+      
+      for (const selection of selections) {
+        console.log('Fetching questions for selection:', selection);
+        let query = supabase
+          .from('quiz_questions')
+          .select('*');
+        
+        // Add category filter if available
+        if (selection.subjectId) {
+          query = query.eq('subject_id', selection.subjectId);
+        }
+          
+        if (selection.blockId) {
+          query = query.eq('block_id', selection.blockId);
+        }
+        
+        // Limit questions per topic if specified
+        if (selection.questionCount) {
+          query = query.limit(selection.questionCount);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          console.error('Query error:', error);
+          console.warn('Query failed for selection:', selection, error);
+          continue; // Skip this selection instead of failing completely
+        }
+        if (data) {
+          console.log('Found questions for selection:', data.length, data);
+          allQuestions.push(...data);
+        }
+      }
+      
+      console.log('Total questions loaded:', allQuestions.length);
+      
+      if (allQuestions.length === 0) {
+        console.log('No questions found. Selections were:', selections);
+        toast({
+          title: "No Questions Found",
+          description: "No questions available for the selected topics. This might be because questions haven't been uploaded for these subjects yet.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Shuffle all questions without limiting
+      const shuffled = allQuestions.sort(() => Math.random() - 0.5);
+      setQuestions(shuffled);
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load quiz questions. Please check your connection and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const isSelected = (subject: QuizSubject, block?: QuizBlock) => {
-    return selectedItems.some(item => 
-      block ? 
-        item.subjectId === subject.id && item.blockId === block.id :
-        item.subjectId === subject.id && !item.blockId
-    );
+  const handleAnswerSelect = (optionNumber: number) => {
+    if (showExplanation) return;
+    setSelectedOption(optionNumber);
   };
 
-  const totalQuestions = selectedItems.reduce((sum, item) => sum + item.questionCount, 0);
-  const limitedTotal = selectedItems.reduce((sum, item) => sum + item.questionCount, 0);
+  const handleSubmitAnswer = () => {
+    if (selectedOption === null) return;
+    
+    const question = questions[currentQuestionIndex];
+    const isCorrect = selectedOption === (question.correct_answer + 1);
+    
+    const answer: Answer = {
+      questionId: question.id,
+      selectedOption,
+      isCorrect
+    };
+    
+    setAnswers(prev => [...prev, answer]);
+    setShowExplanation(true);
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setSelectedOption(null);
+      setShowExplanation(false);
+    } else {
+      handleCompleteQuiz();
+    }
+  };
+
+  const handleCompleteQuiz = async () => {
+    setQuizCompleted(true);
+    
+    const correctAnswers = answers.filter(a => a.isCorrect).length;
+    const scorePercentage = (correctAnswers / questions.length) * 100;
+    const timeTaken = (30 * 60) - timeLeft;
+    
+    try {
+      // Save quiz result
+      await supabase.from('quiz_results').insert({
+        user_id: user?.id,
+        category_id: selections[0]?.subjectId || 'mixed',
+        subject_ids: selections.map(s => s.subjectId),
+        total_questions: questions.length,
+        correct_answers: correctAnswers,
+        score_percentage: scorePercentage,
+        time_taken_seconds: timeTaken
+      });
+      
+      toast({
+        title: "Quiz Completed!",
+        description: `You scored ${scorePercentage.toFixed(1)}% (${correctAnswers}/${questions.length})`,
+      });
+    } catch (error) {
+      console.error('Error saving quiz result:', error);
+    }
+  };
+
+  const formatTime = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  if (showPaymentPrompt) {
+    return (
+      <PaymentPrompt 
+        onBack={onBack}
+        onPaymentSuccess={async () => {
+          // Refresh subscription status first
+          await checkSubscription();
+          setShowPaymentPrompt(false);
+          // Questions will be fetched automatically when hasActiveSubscription updates
+        }}
+      />
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Loading quiz questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="text-center p-6">
+            <h3 className="text-lg font-semibold mb-2">No Questions Available</h3>
+            <p className="text-muted-foreground mb-4">
+              No questions found for the selected topics.
+            </p>
+            <Button onClick={onBack}>Back to Selection</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (quizCompleted) {
+    const correctAnswers = answers.filter(a => a.isCorrect).length;
+    const scorePercentage = (correctAnswers / questions.length) * 100;
+    
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-2xl mx-auto">
+          <Card className="text-center">
+            <CardHeader>
+              <div className="w-20 h-20 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <Trophy className="h-10 w-10 text-white" />
+              </div>
+              <CardTitle className="text-2xl">Quiz Completed!</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary">{correctAnswers}</div>
+                  <div className="text-sm text-muted-foreground">Correct Answers</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-primary">{scorePercentage.toFixed(1)}%</div>
+                  <div className="text-sm text-muted-foreground">Final Score</div>
+                </div>
+              </div>
+              
+              <div className="text-center">
+                <div className="text-lg font-medium">
+                  {scorePercentage >= 80 ? '🎉 Excellent!' : 
+                   scorePercentage >= 60 ? '👍 Good job!' : 
+                   '📚 Keep studying!'}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  Time taken: {formatTime((30 * 60) - timeLeft)}
+                </div>
+              </div>
+              
+              <div className="flex space-x-2">
+                <Button variant="outline" onClick={onBack} className="flex-1">
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Try Again
+                </Button>
+                <Button onClick={onComplete} className="flex-1">
+                  Back to Dashboard
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  const currentQuestion = questions[currentQuestionIndex];
+  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const options = [
+    { label: 'A', text: currentQuestion.option_a },
+    { label: 'B', text: currentQuestion.option_b },
+    { label: 'C', text: currentQuestion.option_c },
+    { label: 'D', text: currentQuestion.option_d },
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <h1 className="text-2xl font-bold">{category.name}</h1>
+    <div className="min-h-screen bg-background p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <Button variant="outline" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+          <Badge variant="outline" className="flex items-center space-x-2">
+            <Clock className="h-4 w-4" />
+            <span>{formatTime(timeLeft)}</span>
+          </Badge>
+        </div>
+
+        {/* Progress */}
+        <div className="mb-6">
+          <div className="flex justify-between text-sm text-muted-foreground mb-2">
+            <span>Question {currentQuestionIndex + 1} of {questions.length}</span>
+            <span>{Math.round(progress)}% Complete</span>
           </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Select Quiz Topics</h2>
-          <p className="text-muted-foreground">
-            Choose the subjects and blocks you want to practice. You can select multiple topics for a comprehensive quiz.
-          </p>
+          <Progress value={progress} className="h-2" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <div className="space-y-6">
-              {category.subjects.map(subject => (
-                <Card key={subject.id}>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center space-x-3">
-                        <Checkbox
-                          checked={isSelected(subject)}
-                          onCheckedChange={(checked) => 
-                            handleSelectionChange(subject, checked as boolean)
-                          }
-                          disabled={subject.blocks && subject.blocks.length > 0}
-                        />
-                        <span>{subject.name}</span>
-                        {subject.isMasterBlock && (
-                          <Badge variant="secondary">Master Block</Badge>
-                        )}
-                      </CardTitle>
-                      <Badge>
-                        {subject.questionCount || 
-                         subject.blocks?.reduce((sum, block) => sum + block.questionCount, 0) || 0} 
-                        questions
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  
-                  {subject.blocks && (
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {subject.blocks.map(block => (
-                          <div key={block.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                            <Checkbox
-                              checked={isSelected(subject, block)}
-                              onCheckedChange={(checked) => 
-                                handleSelectionChange(subject, checked as boolean, block)
-                              }
-                            />
-                            <div className="flex-1">
-                              <div className="font-medium">{block.name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {block.questionCount} questions
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+        {/* Question */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-lg leading-relaxed">
+              {currentQuestion.question}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {options.map((option, index) => {
+                const optionNumber = index + 1;
+                const isSelected = selectedOption === optionNumber;
+                const isCorrect = currentQuestion.correct_answer + 1 === optionNumber;
+                
+                let buttonVariant: "default" | "outline" | "secondary" | "destructive" | "ghost" | "link" = "outline";
+                let className = "";
+                
+                if (showExplanation) {
+                  if (isCorrect) {
+                    buttonVariant = "default";
+                    className = "bg-green-500 hover:bg-green-600 text-white border-green-500";
+                  } else if (isSelected && !isCorrect) {
+                    buttonVariant = "destructive";
+                  }
+                } else if (isSelected) {
+                  buttonVariant = "default";
+                }
+                
+                return (
+                  <Button
+                    key={option.label}
+                    variant={buttonVariant}
+                    className={`w-full text-left p-4 h-auto whitespace-normal ${className}`}
+                    onClick={() => handleAnswerSelect(optionNumber)}
+                    disabled={showExplanation}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-background text-foreground flex items-center justify-center font-medium">
+                        {option.label}
                       </div>
-                    </CardContent>
-                  )}
-                </Card>
-              ))}
+                      <div className="flex-1 text-left">{option.text}</div>
+                      {showExplanation && isCorrect && (
+                        <CheckCircle className="h-5 w-5 text-white flex-shrink-0" />
+                      )}
+                      {showExplanation && isSelected && !isCorrect && (
+                        <XCircle className="h-5 w-5 text-white flex-shrink-0" />
+                      )}
+                    </div>
+                  </Button>
+                );
+              })}
             </div>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4">
-              <CardHeader>
-                <CardTitle>Quiz Settings</CardTitle>
-                <CardDescription>
-                  Configure your quiz preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Timer (minutes)</label>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setTimerMinutes(Math.max(5, timerMinutes - 5))}
-                    >
-                      -
-                    </Button>
-                    <span className="flex-1 text-center font-mono">
-                      {timerMinutes} min
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setTimerMinutes(Math.min(180, timerMinutes + 5))}
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="text-sm text-muted-foreground">
-                    All questions from selected topics will be included.
-                  </div>
-                </div>
-                
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Selected Topics:</span>
-                    <Badge variant="secondary">{selectedItems.length}</Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium">Total Questions:</span>
-                    <div className="flex items-center space-x-1">
-                      <BookOpen className="h-4 w-4" />
-                      <span className="font-mono">{totalQuestions}</span>
-                    </div>
-                  </div>
+        {/* Explanation */}
+        {showExplanation && currentQuestion.explanation && (
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <h4 className="font-medium mb-2 flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                Explanation
+              </h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {currentQuestion.explanation}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm font-medium">Estimated Time:</span>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-4 w-4" />
-                      <span className="font-mono">{Math.ceil(totalQuestions * 1.5)} min</span>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  className="w-full" 
-                  onClick={() => onStartQuiz(selectedItems)}
-                  disabled={selectedItems.length === 0}
-                >
-                  Start Quiz ({totalQuestions} questions)
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Actions */}
+        <div className="flex justify-between">
+          <Button 
+            variant="outline" 
+            disabled={currentQuestionIndex === 0}
+            onClick={() => {
+              if (currentQuestionIndex > 0) {
+                setCurrentQuestionIndex(prev => prev - 1);
+                setSelectedOption(null);
+                setShowExplanation(false);
+              }
+            }}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Previous
+          </Button>
+          
+          {!showExplanation ? (
+            <Button 
+              onClick={handleSubmitAnswer}
+              disabled={selectedOption === null}
+            >
+              Submit Answer
+            </Button>
+          ) : (
+            <Button onClick={handleNextQuestion}>
+              {currentQuestionIndex === questions.length - 1 ? 'Complete Quiz' : 'Next Question'}
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

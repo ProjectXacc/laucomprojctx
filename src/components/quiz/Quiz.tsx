@@ -90,6 +90,10 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
         if (selection.subjectId) {
           query = query.eq('subject_id', selection.subjectId);
         }
+        // Add category filter if available
+        if (selection.subjectId) {
+          query = query.eq('subject_id', selection.subjectId);
+        }
           
         if (selection.blockId) {
           query = query.eq('block_id', selection.blockId);
@@ -101,6 +105,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
           console.error('Query error:', error);
           console.warn('Query failed for selection:', selection, error);
           continue; // Skip this selection instead of failing completely
+          continue; // Skip this selection instead of failing completely
         }
         if (data) {
           console.log('Found questions for selection:', data.length, data);
@@ -111,6 +116,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
       console.log('Total questions loaded:', allQuestions.length);
       
       if (allQuestions.length === 0) {
+        console.log('No questions found. Selections were:', selections);
         console.log('No questions found. Selections were:', selections);
         toast({
           title: "No Questions Found",
@@ -132,7 +138,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
       });
     } finally {
       setIsLoading(false);
-    }
+      // Final shuffle of all selected questions
   };
 
   const handleAnswerSelect = (optionNumber: number) => {
@@ -187,7 +193,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
       
       toast({
         title: "Quiz Completed!",
-        description: `You scored ${scorePercentage.toFixed(1)}% (${correctAnswers}/${questions.length})`,
+        description: "Failed to load quiz questions.",
       });
     } catch (error) {
       console.error('Error saving quiz result:', error);
