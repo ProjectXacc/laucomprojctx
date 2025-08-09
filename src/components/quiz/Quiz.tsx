@@ -84,8 +84,12 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
         console.log('Fetching questions for selection:', selection);
         let query = supabase
           .from('quiz_questions')
-          .select('*')
-          .eq('subject_id', selection.subjectId);
+          .select('*');
+        
+        // Add category filter if available
+        if (selection.subjectId) {
+          query = query.eq('subject_id', selection.subjectId);
+        }
           
         if (selection.blockId) {
           query = query.eq('block_id', selection.blockId);
@@ -95,7 +99,8 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
         
         if (error) {
           console.error('Query error:', error);
-          throw error;
+          console.warn('Query failed for selection:', selection, error);
+          continue; // Skip this selection instead of failing completely
         }
         if (data) {
           console.log('Found questions for selection:', data.length, data);
@@ -106,15 +111,16 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
       console.log('Total questions loaded:', allQuestions.length);
       
       if (allQuestions.length === 0) {
+        console.log('No questions found. Selections were:', selections);
         toast({
           title: "No Questions Found",
-          description: "No questions available for the selected topics.",
+          description: "No questions available for the selected topics. This might be because questions haven't been uploaded for these subjects yet.",
           variant: "destructive",
         });
         return;
       }
       
-      // Shuffle questions
+      // Shuffle all questions without limiting
       const shuffled = allQuestions.sort(() => Math.random() - 0.5);
       setQuestions(shuffled);
     } catch (error) {
