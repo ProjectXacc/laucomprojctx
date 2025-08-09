@@ -185,7 +185,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                 
                 <div>
                   <div className="text-sm text-muted-foreground">
-                    All available questions will be included in your quiz.
+                    All questions from selected topics will be included.
                   </div>
                 </div>
                 
@@ -199,7 +199,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                     <span className="text-sm font-medium">Total Questions:</span>
                     <div className="flex items-center space-x-1">
                       <BookOpen className="h-4 w-4" />
-                      <span className="font-mono">{limitedTotal}</span>
+                      <span className="font-mono">{totalQuestions}</span>
                     </div>
                   </div>
 
@@ -207,7 +207,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                     <span className="text-sm font-medium">Estimated Time:</span>
                     <div className="flex items-center space-x-1">
                       <Clock className="h-4 w-4" />
-                      <span className="font-mono">{Math.ceil(limitedTotal * 1.5)} min</span>
+                      <span className="font-mono">{Math.ceil(totalQuestions * 1.5)} min</span>
                     </div>
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                   onClick={() => onStartQuiz(selectedItems)}
                   disabled={selectedItems.length === 0}
                 >
-                  Start Quiz ({limitedTotal} questions)
+                  Start Quiz ({totalQuestions} questions)
                 </Button>
               </CardContent>
             </Card>
