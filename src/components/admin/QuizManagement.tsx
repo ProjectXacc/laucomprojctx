@@ -37,8 +37,19 @@ export const QuizManagement: React.FC = () => {
   } | null>(null);
 
   const validateQuizQuestion = (question: any, blockId?: string): QuizQuestion | null => {
-    if (!question.question || !Array.isArray(question.options) || question.options.length !== 4) {
+    if (!question.question || typeof question.question !== 'string' || question.question.trim() === '') {
+      throw new Error('Question must have a valid question field');
+    }
+
+    if (!Array.isArray(question.options) || question.options.length !== 4) {
       throw new Error('Question must have a question field and options array with 4 items');
+    }
+
+    // Validate that all options are non-empty strings
+    for (let i = 0; i < question.options.length; i++) {
+      if (!question.options[i] || typeof question.options[i] !== 'string' || question.options[i].trim() === '') {
+        throw new Error(`Option ${i + 1} must be a non-empty string`);
+      }
     }
 
     if (!question.answer || typeof question.answer !== 'string') {
@@ -110,12 +121,14 @@ export const QuizManagement: React.FC = () => {
             validQuestions.push(validQuestion);
           }
         } catch (error) {
-          errors.push(`Question ${index + 1}: ${error instanceof Error ? error.message : 'Invalid format'}`);
+          const errorMessage = error instanceof Error ? error.message : 'Invalid format';
+          errors.push(`Question ${index + 1}: ${errorMessage}`);
+          console.error(`Question ${index + 1} validation error:`, error, 'Question data:', question);
         }
       });
 
       if (validQuestions.length === 0) {
-        throw new Error('No valid questions found in the file');
+        throw new Error(`No valid questions found in the file. ${errors.length > 0 ? 'Errors: ' + errors.slice(0, 3).join('; ') : ''}`);
       }
 
       // Insert questions into database
@@ -125,7 +138,7 @@ export const QuizManagement: React.FC = () => {
 
       if (error) {
         console.error('Supabase insert error:', error);
-        throw error;
+        throw new Error(`Database error: ${error.message}`);
       }
 
       setUploadResult({
@@ -141,9 +154,10 @@ export const QuizManagement: React.FC = () => {
 
     } catch (error) {
       console.error('Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload questions';
       toast({
         title: "Upload Failed",
-        description: error instanceof Error ? error.message : 'Failed to upload questions',
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -193,12 +207,14 @@ export const QuizManagement: React.FC = () => {
             validQuestions.push(validQuestion);
           }
         } catch (error) {
-          errors.push(`Question ${index + 1}: ${error instanceof Error ? error.message : 'Invalid format'}`);
+          const errorMessage = error instanceof Error ? error.message : 'Invalid format';
+          errors.push(`Question ${index + 1}: ${errorMessage}`);
+          console.error(`Question ${index + 1} validation error:`, error, 'Question data:', question);
         }
       });
 
       if (validQuestions.length === 0) {
-        throw new Error('No valid questions found in the JSON');
+        throw new Error(`No valid questions found in the JSON. ${errors.length > 0 ? 'Errors: ' + errors.slice(0, 3).join('; ') : ''}`);
       }
 
       // Insert questions into database
@@ -208,7 +224,7 @@ export const QuizManagement: React.FC = () => {
 
       if (error) {
         console.error('Supabase insert error:', error);
-        throw error;
+        throw new Error(`Database error: ${error.message}`);
       }
 
       setUploadResult({
@@ -226,9 +242,10 @@ export const QuizManagement: React.FC = () => {
 
     } catch (error) {
       console.error('Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload questions';
       toast({
         title: "Upload Failed",
-        description: error instanceof Error ? error.message : 'Failed to upload questions',
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -240,12 +257,16 @@ export const QuizManagement: React.FC = () => {
     {
       "question": "Which bone is found in the upper arm?",
       "options": ["Humerus", "Femur", "Radius", "Tibia"],
-      "answer": "Humerus"
+      "answer": "Humerus",
+      "explanation": "The humerus is the long bone in the upper arm that extends from the shoulder to the elbow.",
+      "difficulty": "easy"
     },
     {
       "question": "What is the primary action of the biceps brachii muscle?",
       "options": ["Flexion of the forearm", "Extension of the forearm", "Rotation of the shoulder", "Abduction of the arm"],
-      "answer": "Flexion of the forearm"
+      "answer": "Flexion of the forearm",
+      "explanation": "The biceps brachii is primarily responsible for flexing the forearm at the elbow joint.",
+      "difficulty": "medium"
     }
   ];
 
@@ -407,6 +428,8 @@ export const QuizManagement: React.FC = () => {
             <strong>Required fields:</strong> question, options (array of 4 strings), answer (exact match to one option)
             <br />
             <strong>Optional fields:</strong> explanation, difficulty (defaults to 'medium')
+            <br />
+            <strong>Important:</strong> Make sure all fields are properly filled and the answer exactly matches one of the options.
           </p>
         </div>
       </CardContent>
