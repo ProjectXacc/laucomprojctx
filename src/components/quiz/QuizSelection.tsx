@@ -72,7 +72,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
   };
 
   const totalQuestions = selectedItems.reduce((sum, item) => sum + item.questionCount, 0);
-  const limitedTotal = selectedItems.reduce((sum, item) => sum + Math.min(item.questionCount, questionsPerTopic), 0);
+  const limitedTotal = selectedItems.reduce((sum, item) => sum + item.questionCount, 0);
 
   return (
     <div className="min-h-screen bg-background">
@@ -184,27 +184,9 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
                 </div>
                 
                 <div>
-                  <label className="text-sm font-medium">Questions per topic</label>
-                  <div className="flex items-center space-x-2 mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setQuestionsPerTopic(Math.max(1, questionsPerTopic - 5))}
-                    >
-                      -
-                    </Button>
-                    <span className="flex-1 text-center font-mono">
-                      {questionsPerTopic}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setQuestionsPerTopic(Math.min(200, questionsPerTopic + 5))}
-                    >
-                      +
-                    </Button>
+                  <div className="text-sm text-muted-foreground">
+                    All available questions will be included in your quiz.
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">We'll cap each selected topic to this number.</p>
                 </div>
                 
                 <div className="border-t pt-4">
@@ -232,7 +214,7 @@ export const QuizSelection: React.FC<QuizSelectionProps> = ({
 
                 <Button 
                   className="w-full" 
-                  onClick={() => onStartQuiz(selectedItems.map(item => ({ ...item, questionCount: Math.max(1, Math.min(item.questionCount, questionsPerTopic)) })))}
+                  onClick={() => onStartQuiz(selectedItems)}
                   disabled={selectedItems.length === 0}
                 >
                   Start Quiz ({limitedTotal} questions)

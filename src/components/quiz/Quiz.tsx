@@ -91,7 +91,7 @@ export const Quiz: React.FC<QuizProps> = ({ selections, onBack, onComplete }) =>
           query = query.eq('block_id', selection.blockId);
         }
         
-        const { data, error } = await query.limit(selection.questionCount);
+        const { data, error } = await query;
         
         if (error) {
           console.error('Query error:', error);
